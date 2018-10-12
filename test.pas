@@ -20,7 +20,7 @@ end;
 end;
 
 
-procedure walld(var tab:b);
+procedure walld(var tab:b);//difficile
 var i:integer;
 begin
 for i:=1 to n do
