@@ -4,8 +4,8 @@ uses crt;
 const n=40;
       
 type a=array[1..n,1..n]of char;//x vertical y horizontal
-     b=array[1..n,1..n]of longint;//0blank 1wall 2body 3head 4bean
-     c=array[1..5]of integer;
+     b=array[1..n,1..n]of longint;//cell's status: 0blank 1wall 2body 3head 4bean
+     c=array[1..5]of integer;//reserved for vanishing food
 
 procedure wallf(var tab:b);
 var i:integer;
@@ -232,7 +232,7 @@ end;
 end;
 
 
-procedure disappear(var tab3:b;var tp:c;var nf:integer);
+procedure disappear(var tab3:b;var tp:c;var nf:integer); //reserved for vanishing
 var i,j:integer;
 begin
 begin
@@ -264,7 +264,7 @@ case tab1[i,j] of
 1:tab[i,j]:='*';//wall
 2:tab[i,j]:='o';//body
 3:tab[i,j]:='@';//head
-4:case tab3[i,j] of
+4:case tab3[i,j] of //table of bean
 1:tab[i,j]:='a';
 2:tab[i,j]:='b';
 3:tab[i,j]:='c';
