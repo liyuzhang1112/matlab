@@ -1,0 +1,42 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "0.1.0",
+    "options": {
+        "cwd": "${workspaceFolder}",
+    },
+    "label": "build",
+    "type": "shell",
+    "group": "build",
+    "presentation": {
+        // Reveal the output only if unrecognized errors occur.
+        "reveal": "silent"
+    },
+    "tasks": [
+        {
+            "taskName": "fpc: build",
+            "command": "fpc",
+            "isShellCommand": true,
+            "showOutput": "always",
+            "args": ["${workspaceFolder}/test.pas"],
+            
+            
+            // Use the standard MS compiler pattern to detect errors, warnings and infos
+            "problemMatcher": {
+                "owner": "external",
+                "pattern": {
+                    "regexp": "^([\\w]+\\.(p|pp|pas))\\((\\d+)\\,(\\d+)\\)\\s(Fatal|Error|Warning|Note):(.*)",
+                    "file": 1,
+                    "line": 3,
+                    "column": 4,
+                    "message": 6
+                }
+            }
+        }
+    ]
+
+		
+		
+		
+		
+}
