@@ -13,6 +13,16 @@ Type a =   array[1..n,1..n] Of char;
     c =   array[1..5] Of integer;
     //reserved for vanishing food
 
+
+//! ----------------------------------------------------------------------
+//!                                 UTILITIES
+//! ----------------------------------------------------------------------
+
+
+
+//! ----------------------------------------------------------------------
+//!                                 PROCEDURE
+//! ----------------------------------------------------------------------
 Procedure wallf(Var tab:b);
 
 Var i:   integer;
@@ -54,9 +64,8 @@ Begin
 
 End;
 
-
-Procedure position(Var x,y,leng:integer;Var tab:b;Var r:char);
-//player controle the direction of snake 
+//* Player controls the direction of snake
+Procedure snakeMove(Var x,y,leng:integer;Var tab:b;Var r:char);
 Begin
     If (r='z') And (tab[x-1][y]<>leng-1) Then
         x := x-1;
@@ -68,10 +77,8 @@ Begin
         x := x+1;
 End;
 
-
+//* Transformation between two tables
 Procedure change(Var x,y,leng:integer;Var tab1,tab2:b);
-//transformation between two tables 
-
 Var i,j:   integer;
 Begin
     For i:=1 To n Do
@@ -86,10 +93,8 @@ Begin
             End;
 End;
 
-
+//* Snak moves
 Procedure serp(Var x,y,leng:integer;Var tab1,tab2:b);
-//the snake moves 
-
 Var i,j:   integer;
 Begin
     For i:=1 To n Do
@@ -103,10 +108,8 @@ Begin
             End;
 End;
 
-
+//* Randomize beans in EASY mode 
 Procedure foodf(Var tab,tab3:b;Var nf:integer;n:integer);
-//randomize the food 
-
 Var i,j:   integer;
 Begin
     Repeat
@@ -121,9 +124,8 @@ Begin
     Until nf=5;
 End;
 
-
+//* Randomize beans in HARD mode
 Procedure foodd(Var tab1,tab3:b;Var nf:integer;n:integer;tp:c);
-
 Var i,j,r,s,randomfood:   integer;
 Begin
     For s:=nf To 5 Do
@@ -162,10 +164,8 @@ End;
 //5 diamant : écran rempli de pommes, disparaît après 5 secondes
 //6 shadow: speed increases for 5 seconds.
 
-
-Procedure eat(d:char;Var x,y,leng,nf,score,speed,live:integer;Var tab1,tab2,tab3
-              :b;Var tp:c);
-//after eat the food
+//* Eating bean
+Procedure eat(d:char;Var x,y,leng,nf,score,speed,live:integer;Var tab1,tab2,tab3:b;Var tp:c);
 Begin
     Case tab3[x][y] Of 
         1:
@@ -263,10 +263,8 @@ Begin
     End;
 End;
 
-
+//* Reserved for vanishing beans
 Procedure disappear(Var tab3:b;Var tp:c;Var nf:integer);
-//reserved for vanishing
-
 Var i,j:   integer;
 Begin
     Begin
@@ -287,9 +285,8 @@ Begin
             End;
 End;
 
-
+//* Flush terminal
 Procedure afficher(tab1,tab3:b;n,score,live:integer);
-
 Var i,j:   integer;
     tab:   a;
 Begin
@@ -325,8 +322,7 @@ End;
 
 Procedure introduction;
 Begin
-    clrscr;
-
+    ClrScr;
 End;
 
 
@@ -336,75 +332,85 @@ Begin
 End;
 
 
+
+//! ----------------------------------------------------------------------
+//!                              MAIN FUNCTION
+//! ----------------------------------------------------------------------
 Var tab1,tab2,tab3:   b;
     tp:   c;
     x,y,leng,i,nf,score,speed,live:   integer;
-    k:   boolean;
-    r,d,e:   char;
+    r,d,inputkey:   char;
 Begin
+    //TODO welcome window
     writeln('welcome to the game snake');
     writeln('introduction of the game, entre i');
     writeln('start the game, entre s');
     writeln('exit the game, entre e');
-    e := readkey;
-    If (e='s') Then
-        Begin
-            writeln('choisissez-vous la difficulté');
-            writeln('facile, entrez f');
-            writeln('difficile, entrez d');
-            d := readkey;
-            fillchar(tab1,sizeof(tab1),0);
-            fillchar(tab2,sizeof(tab2),0);
-            fillchar(tab3,sizeof(tab3),0);
-            fillchar(tp,sizeof(tp),0);
-            Case d Of 
-                'f':   wallf(tab1);
-                'd':   walld(tab1);
-            End;
-            leng := 5;
-            nf := 0;
-            //number of food
-            r := 'd';
-            score := 0;
-            speed := 500;
-            live := 1;
+    inputkey := ReadKey;
 
-            //initial state
-            For i:=1 To leng Do
-                tab2[n div 2][i+1] := i;
-            x := n Div 2;
-            y := 6;
-            change(x,y,leng,tab1,tab2);
-            Case d Of 
-                'f':   foodf(tab1,tab3,nf,n);
-                'd':   foodd(tab1,tab3,nf,n,tp);
-            End;
-            afficher(tab1,tab3,n,score,live);
-            clrscr;
-
-            Repeat
-                //main procedure
-                k := keypressed;
-                If (k=true) Then
-                    r := readkey;
-                position(x,y,leng,tab2,r);
-
-                If (tab1[x][y]=1) Or (tab1[x][y]=2) Then
-                    exit;
-                //
-                If (tab1[x][y]=4) Then
-                    eat(d,x,y,leng,nf,score,speed,live,tab1,tab2,tab3,tp)
-                Else
-                    serp(x,y,leng,tab1,tab2);
-                disappear(tab3,tp,nf);
-                afficher(tab1,tab3,n,score,live);
-                delay(speed);
-                clrscr;
-                For i:=1 To 5 Do
-                    Begin
-                        If (tp[i]<>0) Then
-                            tp[i] := tp[i]+speed;
-                    End;
-            Until (tab1[x][y]=1) Or (tab1[x][y]=2);
+    If (inputkey='s') Then // choose to start game
+    Begin
+        writeln('choisissez-vous la difficulté');
+        writeln('facile, entrez f');
+        writeln('difficile, entrez d');
+        d := ReadKey;
+        fillchar(tab1,sizeof(tab1),0);
+        fillchar(tab2,sizeof(tab2),0);
+        fillchar(tab3,sizeof(tab3),0);
+        fillchar(tp,sizeof(tp),0);
+        Case d Of // choose game level of hard
+            'f':   wallf(tab1);
+            'd':   walld(tab1);
         End;
+        leng := 5;
+        nf := 0;
+        //number of food
+        r := 'd';
+        score := 0;
+        speed := 500;
+        live := 1;
+
+        //initial state
+        For i:=1 To leng Do
+            tab2[n div 2][i+1] := i;
+        x := n Div 2;
+        y := 6;
+        change(x,y,leng,tab1,tab2);
+        Case d Of 
+            'f':   foodf(tab1,tab3,nf,n);
+            'd':   foodd(tab1,tab3,nf,n,tp);
+        End;
+        afficher(tab1,tab3,n,score,live);
+        ClrScr;
+
+        Repeat
+            // read key input during game
+            If (KeyPressed) Then
+            Begin
+                inputkey := ReadKey;
+            End;
+                // If (inputkey = #0) Then //#0 no key
+                // Begin
+                    snakeMove(x,y,leng,tab2,inputkey);
+
+                    If (tab1[x][y]=1) Or (tab1[x][y]=2) Then
+                        exit;
+                    //
+                    If (tab1[x][y]=4) Then
+                        eat(d,x,y,leng,nf,score,speed,live,tab1,tab2,tab3,tp)
+                    Else
+                        serp(x,y,leng,tab1,tab2);
+                    disappear(tab3,tp,nf);
+                    afficher(tab1,tab3,n,score,live);
+                    delay(speed);
+                    ClrScr;
+                    For i:=1 To 5 Do
+                        Begin
+                            If (tp[i]<>0) Then
+                                tp[i] := tp[i]+speed;
+                        End;
+                // End;
+            
+        Until (tab1[x][y]=1) Or (tab1[x][y]=2);
+    End;
 End.
