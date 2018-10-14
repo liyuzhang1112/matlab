@@ -1,0 +1,79 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+
+    /* Personlised config file based on
+       [1] https://gist.github.com/pakLebah/dab98067e9a388a3a8d2f5c0b44a7d3f#file-tasks-json
+       [2] https://marketplace.visualstudio.com/items?itemName=alefragnani.pascal
+    */
+
+    "version": "2.0.0",
+    "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {// task settings for files and folders
+            "PROJECTFILE":"${relativeFile}",
+            "PROJECTBASE":"${fileBasenameNoExtension}"
+        }
+    },
+
+    "tasks": [
+        { //! Build: Run Build Task (cmd+shift+B)
+            "label": "fpc: Build",
+            "command": "fpc",
+            "type": "shell",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": { // Reveal the output only if unrecognized errors occur.
+                "reveal": "silent" // or "never", or "always"
+            },
+            "args": ["${PROJECTFILE}"],
+
+            // Use the standard MS compiler pattern to detect errors, warnings and infos
+            "problemMatcher": {
+                "owner": "external",
+                "fileLocation":["relative", "${workspaceFolder}"], // define how file names reported in a problem should be interpreted
+                "pattern": {
+                    "regexp": "^([\\w]+\\.(p|pp|pas))\\((\\d+)\\,(\\d+)\\)\\s(Fatal|Error|Warning|Note):(.*)",
+                    "file": 1,
+                    "line": 3,
+                    "column": 4,
+                    "message": 6,
+                }
+            }
+        },
+
+        { //! Run: in embedded console
+            "label": "fpc: Run",
+            "type": "shell",
+            "group": "test",
+            "command": "./${PROJECTBASE}",
+            "presentation": {
+              "reveal": "always",
+              "panel": "new",
+            },
+            "problemMatcher": []
+        },
+
+        { //! Run Binary: Run Test Task (cmd+shift+R)
+            "label": "fpc: Run in external",
+            "type": "shell",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "command": "open -a Terminal ./${PROJECTBASE}",
+            "presentation": {
+                "reveal": "never",
+            },
+            "problemMatcher": [],
+        }
+
+    ]
+
+		
+		
+		
+		
+}
