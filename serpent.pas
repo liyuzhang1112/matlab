@@ -11,7 +11,8 @@ program serpent;
 
 uses crt,math;
 
-
+//TODO: read codes
+//? question
 
 //! ----------------------------------------------------------------------------
 //!                              VARIABLE DECLARATION
