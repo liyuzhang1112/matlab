@@ -7,6 +7,22 @@ Superviseur: Jean-Baptiste LOUVET
 
 20 December 2018
 *******************************************************************************)
+
+//!  编 程 规 范
+(******************************************************************************
+- 不！要！改！文！件！名！：要改文件直接更改即可，不要建立文件副本，然后重命名为 "v1, v2, new
+    version, old version"这样
+- 以下是在VS code里可以不同颜色区分的注释符：
+    //! 表示重要注释
+    //? 表示你们有疑问，不懂的地方
+    //TODO 表示待完成的工作
+    //* 其它任何你们想要和普通注释区分开的地方
+- 代码宽度不要超过80列（VS Code左下角 setting -> 搜关键字“Word Wrap Column”然后设置成80）
+- function名和procedure名用：minusculeMajusculeMajuscule 首单词小写，后续单词的首字母大
+  写
+- variable名用：全部小写字母，如有必要，单词间以“_”下划线区分
+- constant名用：全部大写字母
+*******************************************************************************)
 program serpent;
 
 uses crt,math;
@@ -18,6 +34,9 @@ uses crt,math;
 //!                              VARIABLE DECLARATION
 //! ----------------------------------------------------------------------------
 var i,j,len,bombx,bomby,l,dir,dirnew:byte;
+    //? 问题：
+    //? 回复：整个蛇是由一个2维数组来表示的，这个数组记载了蛇每一截所在的坐标（x,y）。行数代表
+    //? 蛇的长度，第一行是蛇头。第一列是横坐标x，第二列是纵坐标y——如果我没记错的话
 	body:array[1..255,1..2] of byte; // coordinates of each segment of snake
 	d:smallint;
 	k:char;
@@ -190,13 +209,13 @@ begin
 	Randomize;
 	len:=1; // initial length of snake
 	d:=200; //? time to delay
-	l:=64;
+	l:=64; //? 回复：这个我也忘了 我设的是啥了……我再仔细看看
 	score:=0;
 	dir:=1; // default direction {1=east,2=south;3=west,4=north}
 	// initiate snake body
 	for i:=1 to 255 do
 		for j:=1 to 2 do
-			body[i,j] := 0;
+			body[i,j] := 0; //? 回复： 初始化数组（蛇神），让数组里面所有的值都=0
 	body[1,1] := 2;
 	body[1,2] := 12;
 	// print perimeter on screen
