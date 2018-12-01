@@ -48,6 +48,12 @@ var i,j,len,bombx,bomby,l,dir,dirnew:byte;
 //! ----------------------------------------------------------------------------
 //* when snake meets wall
 function snakeCollision():boolean;
+(*  Check if a part of snake has touched the obstacle
+    INPUT
+        (none)
+    OUTPUT
+        snakeCollision: if collision, true; if not, false [boolean]
+*)
 var tmp:integer;
 begin
 	snakeCollision := false;
@@ -79,6 +85,16 @@ end;
 //! ----------------------------------------------------------------------------
 //* draw perimeter
 procedure drawbox(x0,y0,width,height:integer; title:string);
+(*  Draw a box (for title board, wall, ...)
+    INPUT
+        x0: X coordinate of top-left point [int]
+        y0: Y coordinate of top-left point [int]
+        width: width of box [int]
+        height: height of box [int]
+        title: insert a title inside the box [str]
+    OUTPUT
+        (none)
+*)
 var i1,i2:integer;
 begin
 	for i2:=1 to height do
@@ -108,6 +124,12 @@ end;
 
 //* draw snake
 procedure drawsnake;
+(*  Show snake on screen
+    INPUT
+        (none)
+    OUTPUT
+        (none)
+*)
 var tmp:integer;
 begin
 	for tmp:=1 to len do
@@ -120,6 +142,12 @@ end;
 
 //* Game over pop-up window
 procedure snakeDeath;
+(*  Show Game Over window
+    INPUT
+        (none)
+    OUTPUT
+        (none)
+*)
 begin
 	textcolor(lightblue);
 	drawbox(1,11,80,3,'');
@@ -133,6 +161,13 @@ end;
 
 //* after snake eating a bean
 procedure snakeGrow(x,y:integer);
+(*  Increase the length of snake if it eats a bean
+    INPUT
+        x: X coordinate [int]
+        y: Y coordinate [int]
+    OUTPUT
+        (none)
+*)
 begin
 	inc(score,len); // i.e. score = score + len
 	inc(len);
@@ -148,6 +183,12 @@ end;
 
 //* Initiate a new snake
 procedure generate_new;
+(*  Create a new snake at a random position
+    INPUT
+        (none)
+    OUTPUT
+        (none)
+*)
 var x,y:integer;
 begin
 	repeat
@@ -165,22 +206,28 @@ end;
 
 //* Control snake to move
 procedure movesnake;
+(*  Change the direction of moving
+    INPUT
+        (none)
+    OUTPUT
+        (none)
+*)
 var x,y,wasx,wasy,tmp:integer;
 	died:boolean;
 begin
 	case dir of
-		1: begin x :=  1; y := 0; end;
-		2: begin x :=  0; y := 1; end;
-		3: begin x := -1; y := 0; end;
-		4: begin x :=  0; y :=-1; end;
+		1: begin x :=  1; y := 0; end; // turn left
+		2: begin x :=  0; y := 1; end; // turn right
+		3: begin x := -1; y := 0; end; // turn down
+		4: begin x :=  0; y :=-1; end; // turn up
 	end;
-	GotoXY(body[1,1], body[1,2]); write('x');
+	GotoXY(body[1,1], body[1,2]); write('x'); // snake head
 	GotoXY(body[len,1], body[len,2]); write(' ');
 	wasx:=body[len,1];
 	wasy:=body[len,2];
 	died := false;
 	if (snake_contains(body[1,1] + x, body[1,2] + y)) then
-		died := true;
+		died := true; //* 若新的点已经包含在蛇身里面，则蛇死亡
 	for tmp:=2 to len do
 	begin
 		body[len-tmp+2,1] := body[len-tmp+1,1];
@@ -219,8 +266,8 @@ begin
 	body[1,2] := 12;
 	// print perimeter on screen
 	textcolor(lightblue);
-	drawbox(1,1,80,24,''); //?
-	drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');
+	drawbox(1,1,80,24,''); //? 回复：画出蛇运动的空间，也就是你们常说的wall
+	drawbox(1,1,80,3,'Jeu de Serpent (c) 2018'); // 游戏标题
 	// print initial snake on screen
 	textcolor(lightred);
 	generate_new;
