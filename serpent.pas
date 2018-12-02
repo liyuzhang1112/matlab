@@ -40,8 +40,8 @@ uses crt,math;
 var i,j,len,dir,dirnew,beans_amount:Integer;
     //整个蛇是由一个2维数组来表示的，这个数组记载了蛇每一截所在的坐标（x,y）。行数代表蛇的长度
     //第一行是蛇头。第一列是横坐标x，第二列是纵坐标y——如果我没记错的话
-	body:array[1..255,1..2] of Integer; // coordinates of each segment of snake
-    beans:array of array of Integer; // coordinates of each bean
+	body:array[1..255,1..2] of Integer; // coordinates of snake
+    beans:array of array of Integer; // coordinates of bean
 	d:SmallInt;
 	k:Char;
 	score:Integer;
@@ -64,18 +64,17 @@ function snakeCollision():boolean;
 var tmp:integer;
 begin
 	snakeCollision := false;
-	for tmp:=1 to len do
-	begin
-		if (body[tmp,1] < 2) or (body[tmp,1] >= 80) then
+	// for tmp:=1 to len do
+	// begin
+		if (body[1,1] < 2) or (body[1,1] >= 80) then
 			snakeCollision := true;
-			break;
-		if (body[tmp,2] < 4) or (body[tmp,2] >= 24) then
+			// break;
+		if (body[1,2] < 4) or (body[1,2] >= 24) then
 			snakeCollision := true;
-			break;
-	end;
+			// break;
+	// end;
 end;
 
-//蛇自己撞自己
 function snakeContain(x,y:integer):boolean;
 (*  Check if a point is already existed in snake body
     INPUT
