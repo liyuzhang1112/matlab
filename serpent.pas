@@ -29,10 +29,8 @@ uses crt,math;
 //? 问题：为什么很多procedure里的variable没有写成entree就可以引用？
 //? 回复：因为这些var都是在主程序中定义的，而那些procedure也只是在主程序中调用的，所以这类var
 //?      就类同全局变量了
-//todo:简单模式同时显示多个食物 => Done !
-//todo:困难模式的墙 => Done !
-//todo:困难模式的食物以及吃完食物后的效果 => Done !
-//todo:加速度
+//todo:食物类型
+
 
 //! ----------------------------------------------------------------------------
 //!                              VARIABLE DECLARATION
@@ -43,7 +41,7 @@ var i,j,len,dir,dirnew,beans_amount:Integer;
     //整个蛇是由一个2维数组来表示的，这个数组记载了蛇每一截所在的坐标（x,y）。行数代表蛇的长度
     //第一行是蛇头。第一列是横坐标x，第二列是纵坐标y——如果我没记错的话
 	body:array[1..255,1..2] of Integer; // coordinates of snake
-    beans:array of array of Integer; // coordinates of bean 
+    beans:array of array of Integer; // coordinates of bean
     hWalls:array of array of Integer; // coordinates of horizontal wall
     vWalls:array of array of Integer; // coordinates of vertical wall
 	diff,start:String;
@@ -240,6 +238,7 @@ procedure snakeGrow(x,y:integer);
 begin
 	inc(score,1); // i.e. score = score + 1
 	inc(len);
+    inc(d,-10);
 	body[len,1] := x;
 	body[len,2] := y;
 	GotoXY(x,y);
@@ -373,7 +372,7 @@ begin
     end;
     // ***** Hitting *****
     if diff='d' then
-    begin 
+    begin
         for tmp := 0 to wall_amount-1 do
         begin
             if (snakeContain(hWalls[tmp,1],hWalls[tmp,2])) or (snakeContain(vWalls[tmp,1],vWalls[tmp,2])) then // snake meets wall
@@ -383,7 +382,7 @@ begin
 	if (snakeCollision) then snakeDeath; // meets perimeters
 end;
 
-procedure intros(var diff,start:string);
+procedure intros;
 begin
 	gotoxy(24,4);
 	writeln('Bienvenue au jeu de serpent!');
@@ -392,7 +391,7 @@ begin
 	gotoxy(2,6);
 	writeln('Vous pouvez utiliser les flèche sur le clavier pour controler la direction');
 	gotoxy(8,7);
-	writeln('Vous ne pouvez pas touche la mur et aussi la corps de la serpent');
+	writeln('Vous ne pouvez pas toucher les murs et le corps du serpent');
 	gotoxy(17,8);
 	writeln('Maintenant vous pouvez choisir la difficulté');
 	gotoxy(19,9);
@@ -409,7 +408,7 @@ begin
 		writeln('Vous avez choisir la mode difficile');
 	end;
 	gotoxy(24,11);
-	writeln('Entrez s pour commencer la jeu');
+	writeln('Entrez c pour commencer la jeu');
 	readln(start);
 end;
 
@@ -422,8 +421,8 @@ begin
 	ClrScr;
 	Randomize;
 	len := 3; // initial length of snake
-	d := 300; // time to delay
-    beans_amount := 10; // initial amount of beans
+	d := 400; // time to delay
+    beans_amount := 5; // initial amount of beans
     wall_number := 4;
     wall_length := 3;
     wall_amount := wall_number * wall_length;
@@ -435,23 +434,23 @@ begin
 	for i:=1 to 255 do
 		for j:=1 to 2 do
 			body[i,j] := 0; // 初始化数组（蛇身），让数组里面所有的值都=0
-	body[1,1] := 6;
-	body[1,2] := 12;
-	body[2,1] := 5;
-	body[2,2] := 12;
-	body[3,1] := 4;
-	body[3,2] := 12;
+	        body[1,1] := 6;
+	        body[1,2] := 12;
+	        body[2,1] := 5;
+	        body[2,2] := 12;
+	        body[3,1] := 4;
+	        body[3,2] := 12;
 	// print perimeter on screen
     textcolor(lightblue);
-	drawbox(1,1,space_width,space_height,''); 
+	drawbox(1,1,space_width,space_height,'');
 	drawbox(1,1,space_width,3,'Jeu de Serpent (c) 2018');
-	intros(diff,start);
-	if start = 's' then
+	intros;
+	if start = 'c' then
 	begin
         // print initial snake on screen
         ClrScr;
         textcolor(lightred);
-        drawbox(1,1,80,24,''); 
+        drawbox(1,1,80,24,'');
         drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');
         initiateBean(5); // initiate beans by a given number
         textColor(lightblue);
@@ -464,11 +463,11 @@ begin
         writeln(' score: ');
         // initiate beans
         initiateBean(beans_amount); // initiate beans by a given number
-        if diff='d' then 
+        if diff='d' then
         begin
             makeHorizontalWalls(wall_number,wall_length,wall_amount); // create horizontal walls
-            makeVerticalWalls(wall_number,wall_length,wall_amount); // create vertical walls      
-        end;      
+            makeVerticalWalls(wall_number,wall_length,wall_amount); // create vertical walls
+        end;
         // ***** Start Game *****
         repeat
             delay(d);
