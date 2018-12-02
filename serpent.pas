@@ -41,7 +41,7 @@ var i,j,len,dir,dirnew,beans_amount:Integer;
     //整个蛇是由一个2维数组来表示的，这个数组记载了蛇每一截所在的坐标（x,y）。行数代表蛇的长度
     //第一行是蛇头。第一列是横坐标x，第二列是纵坐标y——如果我没记错的话
 	body:array[1..255,1..2] of Integer; // coordinates of each segment of snake
-    beans:array[1..5,1..2] of Integer; // coordinates of each bean
+    beans:array of array of Integer; // coordinates of each bean
 	d:SmallInt;
 	k:Char;
 	score:Integer;
@@ -208,8 +208,8 @@ procedure initiateBean(amount:integer);
 *)
 var x,y,ind:integer;
 begin
-    // setLength(beans, amount, 2);
-    for ind := 1 to amount do
+    setLength(beans, amount, 2);
+    for ind := 0 to amount-1 do
     begin
         repeat // generate a random position for new bean
             x := random(78)+1;
@@ -281,7 +281,7 @@ begin
 	body[1,2] := body[1,2] + y;
 	GotoXY(body[1,1], body[1,2]); write('o');
     // ***** Eating *****
-    for tmp := 1 to beans_amount do
+    for tmp := 0 to beans_amount-1 do
     begin
         if (snakeContain(beans[tmp,1],beans[tmp,2])) then // a bean is eaten
         begin
@@ -304,7 +304,7 @@ begin
 	Randomize;
 	len := 3; // initial length of snake
 	d := 200; // time to delay
-    beans_amount := 5; // initial amount of beans
+    beans_amount := 10; // initial amount of beans
 	score:=0;
 	dir:=1; // default direction {1=east, 2=south, 3=west, 4=north}
 	// initiate snake
