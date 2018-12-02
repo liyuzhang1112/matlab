@@ -24,24 +24,27 @@ Superviseur: Jean-Baptiste LOUVET
 - constant名用：全部大写字母
 *******************************************************************************)
 program serpent;
-
 uses crt,math;
 
 //? 问题：为什么很多procedure里的variable没有写成entree就可以引用？
 //? 回复：因为这些var都是在主程序中定义的，而那些procedure也只是在主程序中调用的，所以这类var
 //?      就类同全局变量了
 //todo:简单模式同时显示多个食物 => Done !
-//todo:困难模式的墙
+//todo:困难模式的墙 => Done !
 //todo:困难模式的食物以及吃完食物后的效果 => Done !
 
 //! ----------------------------------------------------------------------------
 //!                              VARIABLE DECLARATION
 //! ----------------------------------------------------------------------------
 var i,j,len,dir,dirnew,beans_amount:Integer;
+    space_width,space_height:Integer;
+    wall_number,wall_length,wall_amount:Integer;
     //整个蛇是由一个2维数组来表示的，这个数组记载了蛇每一截所在的坐标（x,y）。行数代表蛇的长度
     //第一行是蛇头。第一列是横坐标x，第二列是纵坐标y——如果我没记错的话
 	body:array[1..255,1..2] of Integer; // coordinates of snake
-    beans:array of array of Integer; // coordinates of bean
+    beans:array of array of Integer; // coordinates of bean 
+    hWalls:array of array of Integer; // coordinates of horizontal wall
+    vWalls:array of array of Integer; // coordinates of vertical wall
 	d:SmallInt;
 	k:Char;
 	score:Integer;
@@ -59,20 +62,12 @@ function snakeCollision():boolean;
     OUTPUT
         snakeCollision: if collision, true; if not, false [boolean]
 *)
-//? 问题：是否可以不用循环，直接令body[len,1]和body[len,2]满足两个if条件，就可以判断是否出界
-//? 回复：理论上可行，待实测
-// var tmp:integer;
 begin
 	snakeCollision := false;
-	// for tmp:=1 to len do
-	// begin
-		if (body[1,1] < 2) or (body[1,1] >= 80) then
-			snakeCollision := true;
-			// break;
-		if (body[1,2] < 4) or (body[1,2] >= 24) then
-			snakeCollision := true;
-			// break;
-	// end;
+    if (body[1,1] < 2) or (body[1,1] >= space_width) then
+        snakeCollision := true;
+    if (body[1,2] < 4) or (body[1,2] >= space_height-1) then
+        snakeCollision := true;
 end;
 
 function snakeContain(x,y:integer):boolean;
@@ -101,7 +96,7 @@ end;
 //! ----------------------------------------------------------------------------
 //* draw perimeter
 procedure drawbox(x0,y0,width,height:integer; title:string);
-(*  Draw a box (for title board, wall, ...)
+(*  Draw a box (for title board, perimeter, ...)
     INPUT
         x0: X coordinate of top-left point [int]
         y0: Y coordinate of top-left point [int]
@@ -113,10 +108,10 @@ procedure drawbox(x0,y0,width,height:integer; title:string);
 *)
 var i1,i2:integer;
 begin
-	for i2:=1 to height do
+	for i2 := 1 to height do
 	begin
 		GotoXY(x0,y0+i2-1);
-		for i1:=1 to width do
+		for i1 := 1 to width do
 		begin
 			if (i2 = 1) or (i2 = height) then
 				if (i1 = 1) or (i1 = width) then
@@ -137,6 +132,62 @@ begin
 		write(title);
 	end;
 end;
+
+//* make wall
+procedure makeHorizontalWalls(wall_number,wall_length,wall_amount:Integer);
+(* Make horizontal walls
+*)
+var ind,l,pos,x,y:Integer;
+begin
+    setLength(hWalls, wall_amount, 1);
+    for ind := 0 to wall_number-1 do
+    begin
+        // find a random position for new wall
+        repeat
+            x := random(space_width-3-wall_length)+2;
+            y := random(space_height-5-wall_length)+4;
+        until not snakeContain(x,y);
+        // build wall
+        for l := 1 to wall_length do
+        begin
+            pos := ind * wall_length + l - 1;
+            hWalls[pos,1] := x + l - 1;
+            hWalls[pos,2] := y;
+            GotoXY(hWalls[pos,1],hWalls[pos,2]);
+            textColor(lightblue);
+            write('-');
+        end;
+    end;
+    textColor(lightred); // reset color to red
+end;
+
+procedure makeVerticalWalls(wall_number,wall_length,wall_amount:Integer);
+(* Make vertical walls
+*)
+var ind,l,pos,x,y:Integer;
+begin
+    setLength(vWalls, wall_amount, 1);
+    for ind := 0 to wall_number-1 do
+    begin
+        // find a random position for new wall
+        repeat
+            x := random(space_width-3-wall_length)+2;
+            y := random(space_height-5-wall_length)+4;
+        until not snakeContain(x,y);
+        // build wall
+        for l := 1 to wall_length do
+        begin
+            pos := ind * wall_length + l - 1;
+            vWalls[pos,1] := x;
+            vWalls[pos,2] := y + l - 1;
+            GotoXY(vWalls[pos,1],vWalls[pos,2]);
+            textColor(lightblue);
+            write('|');
+        end;
+    end;
+    textColor(lightred); // reset color to red
+end;
+
 
 //* draw snake
 procedure drawsnake;
@@ -198,6 +249,13 @@ begin
 end;
 
 procedure checkSnakeStatus(x,y,ind:integer);
+(*  Find out which kind of bean that has been eaten by snake
+    INPUT
+        x: X coordinate [int]
+        y: Y coordinate [int]
+        ind: index of bean [int]
+    OUTPUT
+*)
 begin
     case beans[ind,3] of
         0: begin snakeGrow(x,y); end; // normal bean
@@ -222,8 +280,8 @@ begin
     begin
         // find a random position for new bean
         repeat
-            x := random(78)+1;
-            y := random(19)+4;
+            x := random(space_width-3)+2;
+            y := random(space_height-5)+4;
         until not snakeContain(x,y);
         beans[ind,1] := x;
         beans[ind,2] := y;
@@ -236,8 +294,7 @@ begin
             2: begin textColor(cyan); write('<'); end; // speed-down bean
             3: begin textColor(black); write('X'); end; // bomb
 	    end;
-        // reset color to red
-        textColor(lightred);
+        textColor(lightred); // reset color to red
     end;
 end;
 
@@ -250,15 +307,19 @@ procedure refreshBean(ind:Integer);
 *)
 var x,y:integer;
 begin
-    repeat // random position for beans
+    repeat // random position for new bean
         x := random(78)+1;
         y := random(19)+4;
     until not snakeContain(x,y);
 	beans[ind,1] := x;
 	beans[ind,2] := y;
 	GotoXY(x,y);
-	textColor(lightgreen);
-	write('*');
+	case beans[ind,3] of
+        0: begin textColor(green); write('*'); end; // normal bean
+        1: begin textColor(magenta); write('>'); end; // speed-up bean
+        2: begin textColor(cyan); write('<'); end; // speed-down bean
+        3: begin textColor(black); write('X'); end; // bomb
+    end;
 	textColor(lightred);
 end;
 
@@ -308,7 +369,13 @@ begin
             break;
         end;
     end;
-	if (snakeCollision) then snakeDeath; // meets wall
+    // ***** Hitting *****
+    for tmp := 0 to wall_amount-1 do
+    begin
+        if (snakeContain(hWalls[tmp,1],hWalls[tmp,2])) or (snakeContain(vWalls[tmp,1],vWalls[tmp,2])) then // snake meets wall
+        snakeDeath
+    end;
+	if (snakeCollision) then snakeDeath; // meets perimeters
 end;
 
 
@@ -323,8 +390,13 @@ begin
 	len := 3; // initial length of snake
 	d := 300; // time to delay
     beans_amount := 10; // initial amount of beans
+    wall_number := 4;
+    wall_length := 3;
+    wall_amount := wall_number * wall_length;
 	score:=0;
 	dir:=1; // default direction {1=east, 2=south, 3=west, 4=north}
+    space_width := 80; // width of gaming space
+    space_height := 24; // height of gaming space
 	// initiate snake
 	for i:=1 to 255 do
 		for j:=1 to 2 do
@@ -337,8 +409,8 @@ begin
 	body[3,2] := 12;
 	// print perimeter on screen
 	textColor(lightblue);
-	drawbox(1,1,80,24,''); // 画出蛇运动的空间，也就是你们常说的wall
-	drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');// 游戏标题
+	drawbox(1,1,space_width,space_height,''); // 画出蛇运动的空间，也就是你们常说的wall
+	drawbox(1,1,space_width,3,'Jeu de Serpent (c) 2018');// 游戏标题
 	// print initial snake on screen
 	textColor(lightred);
 	drawsnake;
@@ -346,6 +418,8 @@ begin
 	writeln(' score: ');
     // initiate beans
 	initiateBean(beans_amount); // initiate beans by a given number
+    makeHorizontalWalls(wall_number,wall_length,wall_amount); // create horizontal walls
+    makeVerticalWalls(wall_number,wall_length,wall_amount); // create vertical walls
 	// ***** Start Game *****
 	repeat
 		delay(d);
