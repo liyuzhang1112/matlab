@@ -27,15 +27,17 @@ program serpent;
 
 uses crt,math;
 
-
+//? 问题：为什么很多procedure里的variable没有写成entree就可以引用？
+//todo:简单模式同时显示多个食物
+//todo:困难模式的墙
+//todo:困难模式的食物以及吃完食物后的效果
 
 //! ----------------------------------------------------------------------------
 //!                              VARIABLE DECLARATION
 //! ----------------------------------------------------------------------------
 var i,j,len,bombx,bomby,l,dir,dirnew:byte;
-    //? 问题：
-    //? 回复：整个蛇是由一个2维数组来表示的，这个数组记载了蛇每一截所在的坐标（x,y）。行数代表
-    //? 蛇的长度，第一行是蛇头。第一列是横坐标x，第二列是纵坐标y——如果我没记错的话
+    //整个蛇是由一个2维数组来表示的，这个数组记载了蛇每一截所在的坐标（x,y）。行数代表蛇的长度
+    //第一行是蛇头。第一列是横坐标x，第二列是纵坐标y——如果我没记错的话
 	body:array[1..255,1..2] of byte; // coordinates of each segment of snake
 	d:smallint;
 	k:char;
@@ -54,6 +56,7 @@ function snakeCollision():boolean;
     OUTPUT
         snakeCollision: if collision, true; if not, false [boolean]
 *)
+//? 问题：是否可以不用循环，直接令body[len,1]和body[len,2]满足两个if条件，就可以判断是否出界
 var tmp:integer;
 begin
 	snakeCollision := false;
@@ -68,6 +71,7 @@ begin
 	end;
 end;
 
+//蛇自己撞自己
 function snake_contains(x,y:integer):boolean;
 var tmp:integer;
 begin
@@ -177,7 +181,7 @@ begin
 	write('x');
 	GotoXY(2,2); // move cursor back to score panel
 	textcolor(white);
-	write(score);
+	write(' score: ',score);
 	textcolor(lightred);
 end;
 
@@ -189,19 +193,23 @@ procedure generate_new;
     OUTPUT
         (none)
 *)
-var x,y:integer;
+var x,y,n:integer;
 begin
-	repeat
-		x := random(78)+1;
-		y := random(19)+4;
-	until not snake_contains(x,y);
+    n:=0;
+    repeat
+	    repeat
+		    x := random(78)+1;
+		     y := random(19)+4;
+	    until not snake_contains(x,y);
 	bombx := x;
 	bomby := y;
 	GotoXY(x,y);
 	inc(l);
 	textcolor(lightgreen);
-	write(chr(l));
+	write('*');
 	textcolor(lightred);
+	n:=n+1;
+	until n=5;
 end;
 
 //* Control snake to move
@@ -253,26 +261,31 @@ begin
 	// ***** Initiation *****
 	ClrScr;
 	Randomize;
-	len:=1; // initial length of snake
-	d:=200; //? time to delay
+	len:=3; // initial length of snake
+	d:=500; // time to delay
 	l:=64; //? 回复：这个我也忘了 我设的是啥了……我再仔细看看
 	score:=0;
 	dir:=1; // default direction {1=east,2=south;3=west,4=north}
 	// initiate snake body
 	for i:=1 to 255 do
 		for j:=1 to 2 do
-			body[i,j] := 0; //? 回复： 初始化数组（蛇神），让数组里面所有的值都=0
-	body[1,1] := 2;
+			body[i,j] := 0; // 初始化数组（蛇身），让数组里面所有的值都=0
+	body[1,1] := 4;
 	body[1,2] := 12;
+	body[2,1] := 3;
+	body[2,2] := 12;
+	body[3,1] := 2;
+	body[3,2] := 12;
 	// print perimeter on screen
 	textcolor(lightblue);
-	drawbox(1,1,80,24,''); //? 回复：画出蛇运动的空间，也就是你们常说的wall
-	drawbox(1,1,80,3,'Jeu de Serpent (c) 2018'); // 游戏标题
+	drawbox(1,1,80,24,''); // 画出蛇运动的空间，也就是你们常说的wall
+	drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');// 游戏标题
 	// print initial snake on screen
 	textcolor(lightred);
 	generate_new;
 	drawsnake;
 	GotoXY(2,2);
+	writeln(' score: ');
 	// ***** Start Game *****
 	repeat
 		delay(d);
@@ -283,10 +296,10 @@ begin
 			begin
 				k:=readkey;
 				case k of
-					#77: dirnew := 1;
-					#80: dirnew := 2;
-					#75: dirnew := 3;
-					#72: dirnew := 4;
+					#77: dirnew := 1;//left
+					#80: dirnew := 2;//right
+					#75: dirnew := 3;//up
+					#72: dirnew := 4;//down
 				end;
 				if (dir = 1) and (dirnew <> 3) then dir := dirnew;
 				if (dir = 2) and (dirnew <> 4) then dir := dirnew;
