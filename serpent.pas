@@ -28,6 +28,8 @@ program serpent;
 uses crt,math;
 
 //? 问题：为什么很多procedure里的variable没有写成entree就可以引用？
+//? 回复：因为这些var都是在主程序中定义的，而那些procedure也只是在主程序中调用的，所以这类var
+//?      就类同全局变量了
 //todo:简单模式同时显示多个食物
 //todo:困难模式的墙
 //todo:困难模式的食物以及吃完食物后的效果
@@ -35,10 +37,11 @@ uses crt,math;
 //! ----------------------------------------------------------------------------
 //!                              VARIABLE DECLARATION
 //! ----------------------------------------------------------------------------
-var i,j,len,bombx,bomby,l,dir,dirnew:byte;
+var i,j,len,beanX,beanY,dir,dirnew:byte;
     //整个蛇是由一个2维数组来表示的，这个数组记载了蛇每一截所在的坐标（x,y）。行数代表蛇的长度
     //第一行是蛇头。第一列是横坐标x，第二列是纵坐标y——如果我没记错的话
 	body:array[1..255,1..2] of byte; // coordinates of each segment of snake
+    bean:array of array of byte; // coordinates of each bean
 	d:smallint;
 	k:char;
 	score:integer;
@@ -57,6 +60,7 @@ function snakeCollision():boolean;
         snakeCollision: if collision, true; if not, false [boolean]
 *)
 //? 问题：是否可以不用循环，直接令body[len,1]和body[len,2]满足两个if条件，就可以判断是否出界
+//? 回复：理论上可行，待实测
 var tmp:integer;
 begin
 	snakeCollision := false;
@@ -158,7 +162,7 @@ begin
 	GotoXY(37,12);
 	textcolor(lightred);
 	write('Game Over');
-	textcolor(lightgray);
+	// textcolor(lightgray);
 	GotoXY(20,20);
 	halt;
 end;
@@ -173,7 +177,7 @@ procedure snakeGrow(x,y:integer);
         (none)
 *)
 begin
-	inc(score,len); // i.e. score = score + len
+	inc(score,1); // i.e. score = score + 1
 	inc(len);
 	body[len,1] := x;
 	body[len,2] := y;
@@ -185,31 +189,53 @@ begin
 	textcolor(lightred);
 end;
 
-//* Initiate a new snake
-procedure generate_new;//问题：食物还是会随机到边框上，食物越吃越多，吃到有些食物长度不变分数不变
-(*  Create a new snake at a random position
+
+procedure initiateBean(n:integer);
+(*  Initiate beans at the begining of game
+    INPUT
+        n: initial number of beans [int]
+    OUTPUT
+        (none)
+*)
+var x,y,i:integer;
+begin
+    i := 0;
+    repeat
+        repeat // random position for beans
+            x := random(78)+1;
+            y := random(19)+4;
+        until not snake_contains(x,y);
+        beanX := x;
+        beanY := y;
+        GotoXY(x,y);
+        // inc(l); //? 回复：我想起之前那个l是拿来干嘛的了……用来控制字母A，B，C，……来标记豆子
+        textcolor(lightgreen);
+        write('*');
+        inc(i)
+    until i = n;
+    textcolor(lightred); // reset color to red
+end;
+
+procedure refreshBean;
+(*  Refresh a new bean after eating
     INPUT
         (none)
     OUTPUT
         (none)
 *)
-var x,y,n:integer;
+var x,y:integer;
 begin
-    n:=0;
-    repeat
-	    repeat
-		    x := random(78)+1;
-		    y := random(19)+4;
-	    until not snake_contains(x,y);
-	bombx := x;
-	bomby := y;
+    repeat // random position for beans
+        x := random(78)+1;
+        y := random(19)+4;
+    until not snake_contains(x,y);
+	beanX := x;
+	beanY := y;
 	GotoXY(x,y);
-	inc(l);
+	// inc(l); //? 回复：我想起之前那个l是拿来干嘛的了……用来控制字母A，B，C，……来标记豆子
 	textcolor(lightgreen);
 	write('*');
 	textcolor(lightred);
-	n:=n+1;
-	until n=5;
 end;
 
 //* Control snake to move
@@ -229,7 +255,7 @@ begin
 		3: begin x := -1; y := 0; end; // turn down
 		4: begin x :=  0; y :=-1; end; // turn up
 	end;
-	GotoXY(body[1,1], body[1,2]); write('x'); // snake head
+	GotoXY(body[1,1], body[1,2]); write('x'); // change snake head to body
 	GotoXY(body[len,1], body[len,2]); write(' ');
 	wasx:=body[len,1];
 	wasy:=body[len,2];
@@ -245,57 +271,25 @@ begin
 	body[1,2] := body[1,2] + y;
 	GotoXY(body[1,1], body[1,2]); write('o');
 	if (died) then snakeDeath;
-	if (snake_contains(bombx,bomby)) then
+	if (snake_contains(beanX,beanY)) then // eats bean
 	begin
 		snakeGrow(wasx,wasy);
-		generate_new;
+		refreshBean;
 	end;
 	if (snakeCollision) then snakeDeath; // meets wall
-end;
-//:introduction
-procedure intros(var diff,start:string);
-begin
-	gotoxy(24,4);
-	writeln('Bienvenue au jeu de serpent!');
-	gotoxy(26,5);
-	writeln('Voici la règle de ce jeu：');
-	gotoxy(2,6);
-	writeln('Vous pouvez utiliser les flèche sur le clavier pour controler la direction');
-	gotoxy(8,7);
-	writeln('Vous ne pouvez pas touche la mur et aussi la corps de la serpent');
-	gotoxy(17,8);
-	writeln('Maintenant vous pouvez choisir la difficulté');
-	gotoxy(19,9);
-	writeln('Entrez f pour facile et d pour difficile');
-	readln(diff);
-	if diff='f' then
-	begin
-		gotoxy(23,10);
-		writeln('Vous avez choisir la mode facile');
-	end;
-	if diff='d' then
-	begin
-		gotoxy(21,10);
-		writeln('Vous avez choisir la mode difficile');
-	end;
-	gotoxy(24,11);
-	writeln('Entrez s pour commencer la jeu');
-	readln(start);
 end;
 
 
 //! ----------------------------------------------------------------------------
 //!                                  MAIN PROGRAM
 //! ----------------------------------------------------------------------------
-var diff:string;
-	start:string;
 begin
 	// ***** Initiation *****
 	ClrScr;
 	Randomize;
 	len:=3; // initial length of snake
-	d:=500; // time to delay
-	l:=64; //? 回复：这个我也忘了 我设的是啥了……我再仔细看看
+	d:=300; // time to delay
+	// l:=64; //? 回复：见210行
 	score:=0;
 	dir:=1; // default direction {1=east,2=south;3=west,4=north}
 	// initiate snake body
@@ -310,17 +304,11 @@ begin
 	body[3,2] := 12;
 	// print perimeter on screen
 	textcolor(lightblue);
-	drawbox(1,1,80,24,''); 
-	drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');
-	intros(diff,start);
-	if start = 's' then
-	begin
+	drawbox(1,1,80,24,''); // 画出蛇运动的空间，也就是你们常说的wall
+	drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');// 游戏标题
 	// print initial snake on screen
-	ClrScr;
 	textcolor(lightred);
-	drawbox(1,1,80,24,''); 
-	drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');
-	generate_new;
+	initiateBean(5); // initiate beans by a given number
 	drawsnake;
 	GotoXY(2,2);
 	writeln(' score: ');
@@ -334,10 +322,10 @@ begin
 			begin
 				k:=readkey;
 				case k of
-					#77: dirnew := 1;//left
-					#80: dirnew := 2;//right
-					#75: dirnew := 3;//up
-					#72: dirnew := 4;//down
+					#77: dirnew := 1; // left
+					#80: dirnew := 2; // right
+					#75: dirnew := 3; // up
+					#72: dirnew := 4; // down
 				end;
 				if (dir = 1) and (dirnew <> 3) then dir := dirnew;
 				if (dir = 2) and (dirnew <> 4) then dir := dirnew;
@@ -351,5 +339,4 @@ begin
 	until false;
 	textcolor(lightgray);
 	GotoXY(1,25);
-	end;
 end.
