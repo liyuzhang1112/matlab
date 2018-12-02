@@ -378,6 +378,35 @@ begin
 	if (snakeCollision) then snakeDeath; // meets perimeters
 end;
 
+procedure intros(var diff,start:string);
+begin
+	gotoxy(24,4);
+	writeln('Bienvenue au jeu de serpent!');
+	gotoxy(26,5);
+	writeln('Voici la règle de ce jeu：');
+	gotoxy(2,6);
+	writeln('Vous pouvez utiliser les flèche sur le clavier pour controler la direction');
+	gotoxy(8,7);
+	writeln('Vous ne pouvez pas touche la mur et aussi la corps de la serpent');
+	gotoxy(17,8);
+	writeln('Maintenant vous pouvez choisir la difficulté');
+	gotoxy(19,9);
+	writeln('Entrez f pour facile et d pour difficile');
+	readln(diff);
+	if diff='f' then
+	begin
+		gotoxy(23,10);
+		writeln('Vous avez choisir la mode facile');
+	end;
+	if diff='d' then
+	begin
+		gotoxy(21,10);
+		writeln('Vous avez choisir la mode difficile');
+	end;
+	gotoxy(24,11);
+	writeln('Entrez s pour commencer la jeu');
+	readln(start);
+end;
 
 
 //! ----------------------------------------------------------------------------
@@ -408,43 +437,56 @@ begin
 	body[3,1] := 4;
 	body[3,2] := 12;
 	// print perimeter on screen
-	textColor(lightblue);
-	drawbox(1,1,space_width,space_height,''); // 画出蛇运动的空间，也就是你们常说的wall
-	drawbox(1,1,space_width,3,'Jeu de Serpent (c) 2018');// 游戏标题
-	// print initial snake on screen
-	textColor(lightred);
-	drawsnake;
-	GotoXY(2,2);
-	writeln(' score: ');
-    // initiate beans
-	initiateBean(beans_amount); // initiate beans by a given number
-    makeHorizontalWalls(wall_number,wall_length,wall_amount); // create horizontal walls
-    makeVerticalWalls(wall_number,wall_length,wall_amount); // create vertical walls
-	// ***** Start Game *****
-	repeat
-		delay(d);
-		if (keypressed) then
-		begin
-			k:=readkey;
-			if (k = #0) then
-			begin
-				k:=readkey;
-				case k of
-					#77: dirnew := 1; // right (i.e. east)
-					#80: dirnew := 2; // down (i.e. south)
-					#75: dirnew := 3; // left (i.e. west)
-					#72: dirnew := 4; // up (i.e. north)
-				end;
-				if (dir = 1) and (dirnew <> 3) then dir := dirnew;
-				if (dir = 2) and (dirnew <> 4) then dir := dirnew;
-				if (dir = 3) and (dirnew <> 1) then dir := dirnew;
-				if (dir = 4) and (dirnew <> 2) then dir := dirnew;
-			end;
-			if (k = #27) then snakeDeath; // press ESC button
-		end;
-		movesnake;
-		GotoXY(2,2);
-	until false;
-	textColor(lightgray);
-	GotoXY(1,25);
+    textcolor(lightblue);
+	drawbox(1,1,space_width,space_height,''); 
+	drawbox(1,1,space_width,3,'Jeu de Serpent (c) 2018');
+	intros(diff,start);
+	if start = 's' then
+	begin
+        // print initial snake on screen
+        ClrScr;
+        textcolor(lightred);
+        drawbox(1,1,80,24,''); 
+        drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');
+        initiateBean(5); // initiate beans by a given number
+        textColor(lightblue);
+        drawbox(1,1,space_width,space_height,''); // 画出蛇运动的空间，也就是你们常说的wall
+        drawbox(1,1,space_width,3,'Jeu de Serpent (c) 2018');// 游戏标题
+        // print initial snake on screen
+        textColor(lightred);
+        drawsnake;
+        GotoXY(2,2);
+        writeln(' score: ');
+        // initiate beans
+        initiateBean(beans_amount); // initiate beans by a given number
+        makeHorizontalWalls(wall_number,wall_length,wall_amount); // create horizontal walls
+        makeVerticalWalls(wall_number,wall_length,wall_amount); // create vertical walls
+        // ***** Start Game *****
+        repeat
+            delay(d);
+            if (keypressed) then
+            begin
+                k:=readkey;
+                if (k = #0) then
+                begin
+                    k:=readkey;
+                    case k of
+                        #77: dirnew := 1; // right (i.e. east)
+                        #80: dirnew := 2; // down (i.e. south)
+                        #75: dirnew := 3; // left (i.e. west)
+                        #72: dirnew := 4; // up (i.e. north)
+                    end;
+                    if (dir = 1) and (dirnew <> 3) then dir := dirnew;
+                    if (dir = 2) and (dirnew <> 4) then dir := dirnew;
+                    if (dir = 3) and (dirnew <> 1) then dir := dirnew;
+                    if (dir = 4) and (dirnew <> 2) then dir := dirnew;
+                end;
+                if (k = #27) then snakeDeath; // press ESC button
+            end;
+            movesnake;
+            GotoXY(2,2);
+        until false;
+        textColor(lightgray);
+        GotoXY(1,25);
+    end;
 end.
