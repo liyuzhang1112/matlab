@@ -158,7 +158,7 @@ begin
 	GotoXY(37,12);
 	textcolor(lightred);
 	write('Game Over');
-	// textcolor(lightgray);
+	textcolor(lightgray);
 	GotoXY(20,20);
 	halt;
 end;
@@ -186,7 +186,7 @@ begin
 end;
 
 //* Initiate a new snake
-procedure generate_new;
+procedure generate_new;//问题：食物还是会随机到边框上，食物越吃越多，吃到有些食物长度不变分数不变
 (*  Create a new snake at a random position
     INPUT
         (none)
@@ -199,7 +199,7 @@ begin
     repeat
 	    repeat
 		    x := random(78)+1;
-		     y := random(19)+4;
+		    y := random(19)+4;
 	    until not snake_contains(x,y);
 	bombx := x;
 	bomby := y;
@@ -252,11 +252,43 @@ begin
 	end;
 	if (snakeCollision) then snakeDeath; // meets wall
 end;
+//:introduction
+procedure intros(var diff,start:string);
+begin
+	gotoxy(24,4);
+	writeln('Bienvenue au jeu de serpent!');
+	gotoxy(26,5);
+	writeln('Voici la règle de ce jeu：');
+	gotoxy(2,6);
+	writeln('Vous pouvez utiliser les flèche sur le clavier pour controler la direction');
+	gotoxy(8,7);
+	writeln('Vous ne pouvez pas touche la mur et aussi la corps de la serpent');
+	gotoxy(17,8);
+	writeln('Maintenant vous pouvez choisir la difficulté');
+	gotoxy(19,9);
+	writeln('Entrez f pour facile et d pour difficile');
+	readln(diff);
+	if diff='f' then
+	begin
+		gotoxy(23,10);
+		writeln('Vous avez choisir la mode facile');
+	end;
+	if diff='d' then
+	begin
+		gotoxy(21,10);
+		writeln('Vous avez choisir la mode difficile');
+	end;
+	gotoxy(24,11);
+	writeln('Entrez s pour commencer la jeu');
+	readln(start);
+end;
 
 
 //! ----------------------------------------------------------------------------
 //!                                  MAIN PROGRAM
 //! ----------------------------------------------------------------------------
+var diff:string;
+	start:string;
 begin
 	// ***** Initiation *****
 	ClrScr;
@@ -278,10 +310,16 @@ begin
 	body[3,2] := 12;
 	// print perimeter on screen
 	textcolor(lightblue);
-	drawbox(1,1,80,24,''); // 画出蛇运动的空间，也就是你们常说的wall
-	drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');// 游戏标题
+	drawbox(1,1,80,24,''); 
+	drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');
+	intros(diff,start);
+	if start = 's' then
+	begin
 	// print initial snake on screen
+	ClrScr;
 	textcolor(lightred);
+	drawbox(1,1,80,24,''); 
+	drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');
 	generate_new;
 	drawsnake;
 	GotoXY(2,2);
@@ -313,4 +351,5 @@ begin
 	until false;
 	textcolor(lightgray);
 	GotoXY(1,25);
+	end;
 end.
