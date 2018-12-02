@@ -37,14 +37,14 @@ uses crt,math;
 //! ----------------------------------------------------------------------------
 //!                              VARIABLE DECLARATION
 //! ----------------------------------------------------------------------------
-var i,j,len,beanX,beanY,dir,dirnew:byte;
+var i,j,len,dir,dirnew,beans_amount:Integer;
     //整个蛇是由一个2维数组来表示的，这个数组记载了蛇每一截所在的坐标（x,y）。行数代表蛇的长度
     //第一行是蛇头。第一列是横坐标x，第二列是纵坐标y——如果我没记错的话
-	body:array[1..255,1..2] of byte; // coordinates of each segment of snake
-    bean:array of array of byte; // coordinates of each bean
-	d:smallint;
-	k:char;
-	score:integer;
+	body:array[1..255,1..2] of Integer; // coordinates of each segment of snake
+    beans:array[1..5,1..2] of Integer; // coordinates of each bean
+	d:SmallInt;
+	k:Char;
+	score:Integer;
 
 
 
@@ -76,13 +76,22 @@ begin
 end;
 
 //蛇自己撞自己
-function snake_contains(x,y:integer):boolean;
-var tmp:integer;
+function snakeContain(x,y:integer):boolean;
+(*  Check if a point is already existed in snake body
+    INPUT
+        x: X coordinate [int]
+        y: Y coordinate [int]
+    OUTPUT
+        snakeContain: if existant, true; else, false [boolean]
+*)
+// var i:integer;
 begin
-	snake_contains := false;
-	for tmp:=1 to len do
+	snakeContain := false;
+	for i := 1 to len do
 	begin
-		if (body[tmp,1] = x) and (body[tmp,2] = y) then snake_contains := true;
+		if (body[i,1] = x) and (body[i,2] = y) then
+            snakeContain := true;
+            break;
 	end;
 end;
 
@@ -190,33 +199,32 @@ begin
 end;
 
 
-procedure initiateBean(n:integer);
+procedure initiateBean(amount:integer);
 (*  Initiate beans at the begining of game
     INPUT
-        n: initial number of beans [int]
+        amount: initial number of beans [int]
     OUTPUT
         (none)
 *)
-var x,y,i:integer;
+var x,y,ind:integer;
 begin
-    i := 0;
-    repeat
-        repeat // random position for beans
+    // setLength(beans, amount, 2);
+    for ind := 1 to amount do
+    begin
+        repeat // generate a random position for new bean
             x := random(78)+1;
             y := random(19)+4;
-        until not snake_contains(x,y);
-        beanX := x;
-        beanY := y;
+        until not snakeContain(x,y);
+        beans[ind,1] := x;
+        beans[ind,2] := y;
         GotoXY(x,y);
-        // inc(l); //? 回复：我想起之前那个l是拿来干嘛的了……用来控制字母A，B，C，……来标记豆子
-        textcolor(lightgreen);
+        textcolor(lightgreen); // set color to green for marking beans
         write('*');
-        inc(i)
-    until i = n;
-    textcolor(lightred); // reset color to red
+        textcolor(lightred); // reset color to red
+    end;
 end;
 
-procedure refreshBean;
+procedure refreshBean(ind:Integer);
 (*  Refresh a new bean after eating
     INPUT
         (none)
@@ -228,11 +236,10 @@ begin
     repeat // random position for beans
         x := random(78)+1;
         y := random(19)+4;
-    until not snake_contains(x,y);
-	beanX := x;
-	beanY := y;
+    until not snakeContain(x,y);
+	beans[ind,1] := x;
+	beans[ind,2] := y;
 	GotoXY(x,y);
-	// inc(l); //? 回复：我想起之前那个l是拿来干嘛的了……用来控制字母A，B，C，……来标记豆子
 	textcolor(lightgreen);
 	write('*');
 	textcolor(lightred);
@@ -247,37 +254,45 @@ procedure movesnake;
         (none)
 *)
 var x,y,wasx,wasy,tmp:integer;
-	died:boolean;
 begin
+    // get direction from main program
 	case dir of
-		1: begin x :=  1; y := 0; end; // turn left
-		2: begin x :=  0; y := 1; end; // turn right
-		3: begin x := -1; y := 0; end; // turn down
-		4: begin x :=  0; y :=-1; end; // turn up
+		1: begin x :=  1; y := 0; end; // right (i.e. east)
+		2: begin x :=  0; y := 1; end; // down (i.e. south)
+		3: begin x := -1; y := 0; end; // left (i.e. west)
+		4: begin x :=  0; y :=-1; end; // up (i.e. north)
 	end;
+    // ***** Moving *****
 	GotoXY(body[1,1], body[1,2]); write('x'); // change snake head to body
-	GotoXY(body[len,1], body[len,2]); write(' ');
-	wasx:=body[len,1];
-	wasy:=body[len,2];
-	died := false;
-	if (snake_contains(body[1,1] + x, body[1,2] + y)) then
-		died := true; //* 若新的点已经包含在蛇身里面，则蛇死亡
+	GotoXY(body[len,1], body[len,2]); write(' '); // change snake tail to empty
+	wasx := body[len,1];
+	wasy := body[len,2];
+    // check if snake meets itself
+	if (snakeContain(body[1,1] + x, body[1,2] + y)) then
+        snakeDeath; //* 若新的点已经包含在蛇身里面，则蛇死亡，意即蛇碰到自己
+    // change segment of snake: from previous position to next position
 	for tmp:=2 to len do
 	begin
 		body[len-tmp+2,1] := body[len-tmp+1,1];
 		body[len-tmp+2,2] := body[len-tmp+1,2];
 	end;
+    // change snake head: add new position
 	body[1,1] := body[1,1] + x;
 	body[1,2] := body[1,2] + y;
 	GotoXY(body[1,1], body[1,2]); write('o');
-	if (died) then snakeDeath;
-	if (snake_contains(beanX,beanY)) then // eats bean
-	begin
-		snakeGrow(wasx,wasy);
-		refreshBean;
-	end;
+    // ***** Eating *****
+    for tmp := 1 to beans_amount do
+    begin
+        if (snakeContain(beans[tmp,1],beans[tmp,2])) then // a bean is eaten
+        begin
+            snakeGrow(wasx,wasy);
+            refreshBean(tmp);
+            break;
+        end;
+    end;
 	if (snakeCollision) then snakeDeath; // meets wall
 end;
+
 
 
 //! ----------------------------------------------------------------------------
@@ -287,20 +302,20 @@ begin
 	// ***** Initiation *****
 	ClrScr;
 	Randomize;
-	len:=3; // initial length of snake
-	d:=300; // time to delay
-	// l:=64; //? 回复：见210行
+	len := 3; // initial length of snake
+	d := 200; // time to delay
+    beans_amount := 5; // initial amount of beans
 	score:=0;
-	dir:=1; // default direction {1=east,2=south;3=west,4=north}
-	// initiate snake body
+	dir:=1; // default direction {1=east, 2=south, 3=west, 4=north}
+	// initiate snake
 	for i:=1 to 255 do
 		for j:=1 to 2 do
 			body[i,j] := 0; // 初始化数组（蛇身），让数组里面所有的值都=0
-	body[1,1] := 4;
+	body[1,1] := 6;
 	body[1,2] := 12;
-	body[2,1] := 3;
+	body[2,1] := 5;
 	body[2,2] := 12;
-	body[3,1] := 2;
+	body[3,1] := 4;
 	body[3,2] := 12;
 	// print perimeter on screen
 	textcolor(lightblue);
@@ -308,10 +323,11 @@ begin
 	drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');// 游戏标题
 	// print initial snake on screen
 	textcolor(lightred);
-	initiateBean(5); // initiate beans by a given number
 	drawsnake;
 	GotoXY(2,2);
 	writeln(' score: ');
+    // initiate beans
+	initiateBean(beans_amount); // initiate beans by a given number
 	// ***** Start Game *****
 	repeat
 		delay(d);
@@ -322,10 +338,10 @@ begin
 			begin
 				k:=readkey;
 				case k of
-					#77: dirnew := 1; // left
-					#80: dirnew := 2; // right
-					#75: dirnew := 3; // up
-					#72: dirnew := 4; // down
+					#77: dirnew := 1; // right (i.e. east)
+					#80: dirnew := 2; // down (i.e. south)
+					#75: dirnew := 3; // left (i.e. west)
+					#72: dirnew := 4; // up (i.e. north)
 				end;
 				if (dir = 1) and (dirnew <> 3) then dir := dirnew;
 				if (dir = 2) and (dirnew <> 4) then dir := dirnew;
