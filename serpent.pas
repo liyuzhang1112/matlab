@@ -32,6 +32,7 @@ uses crt,math;
 //todo:简单模式同时显示多个食物 => Done !
 //todo:困难模式的墙 => Done !
 //todo:困难模式的食物以及吃完食物后的效果 => Done !
+//todo:加速度
 
 //! ----------------------------------------------------------------------------
 //!                              VARIABLE DECLARATION
@@ -45,7 +46,8 @@ var i,j,len,dir,dirnew,beans_amount:Integer;
     beans:array of array of Integer; // coordinates of bean 
     hWalls:array of array of Integer; // coordinates of horizontal wall
     vWalls:array of array of Integer; // coordinates of vertical wall
-	d:SmallInt;
+	diff,start:String;
+    d:SmallInt;
 	k:Char;
 	score:Integer;
 
@@ -370,10 +372,13 @@ begin
         end;
     end;
     // ***** Hitting *****
-    for tmp := 0 to wall_amount-1 do
-    begin
-        if (snakeContain(hWalls[tmp,1],hWalls[tmp,2])) or (snakeContain(vWalls[tmp,1],vWalls[tmp,2])) then // snake meets wall
-        snakeDeath
+    if diff='d' then
+    begin 
+        for tmp := 0 to wall_amount-1 do
+        begin
+            if (snakeContain(hWalls[tmp,1],hWalls[tmp,2])) or (snakeContain(vWalls[tmp,1],vWalls[tmp,2])) then // snake meets wall
+            snakeDeath
+        end;
     end;
 	if (snakeCollision) then snakeDeath; // meets perimeters
 end;
@@ -459,8 +464,11 @@ begin
         writeln(' score: ');
         // initiate beans
         initiateBean(beans_amount); // initiate beans by a given number
-        makeHorizontalWalls(wall_number,wall_length,wall_amount); // create horizontal walls
-        makeVerticalWalls(wall_number,wall_length,wall_amount); // create vertical walls
+        if diff='d' then 
+        begin
+            makeHorizontalWalls(wall_number,wall_length,wall_amount); // create horizontal walls
+            makeVerticalWalls(wall_number,wall_length,wall_amount); // create vertical walls      
+        end;      
         // ***** Start Game *****
         repeat
             delay(d);
