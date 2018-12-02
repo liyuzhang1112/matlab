@@ -24,27 +24,30 @@ Superviseur: Jean-Baptiste LOUVET
 - constant名用：全部大写字母
 *******************************************************************************)
 program serpent;
-
 uses crt,math;
 
 //? 问题：为什么很多procedure里的variable没有写成entree就可以引用？
 //? 回复：因为这些var都是在主程序中定义的，而那些procedure也只是在主程序中调用的，所以这类var
 //?      就类同全局变量了
-//todo:简单模式同时显示多个食物
-//todo:困难模式的墙
-//todo:困难模式的食物以及吃完食物后的效果
+//todo:简单模式同时显示多个食物 => Done !
+//todo:困难模式的墙 => Done !
+//todo:困难模式的食物以及吃完食物后的效果 => Done !
 
 //! ----------------------------------------------------------------------------
 //!                              VARIABLE DECLARATION
 //! ----------------------------------------------------------------------------
-var i,j,len,beanX,beanY,dir,dirnew:byte;
+var i,j,len,dir,dirnew,beans_amount:Integer;
+    space_width,space_height:Integer;
+    wall_number,wall_length,wall_amount:Integer;
     //整个蛇是由一个2维数组来表示的，这个数组记载了蛇每一截所在的坐标（x,y）。行数代表蛇的长度
     //第一行是蛇头。第一列是横坐标x，第二列是纵坐标y——如果我没记错的话
-	body:array[1..255,1..2] of byte; // coordinates of each segment of snake
-    bean:array of array of byte; // coordinates of each bean
-	d:smallint;
-	k:char;
-	score:integer;
+	body:array[1..255,1..2] of Integer; // coordinates of snake
+    beans:array of array of Integer; // coordinates of bean 
+    hWalls:array of array of Integer; // coordinates of horizontal wall
+    vWalls:array of array of Integer; // coordinates of vertical wall
+	d:SmallInt;
+	k:Char;
+	score:Integer;
 
 
 
@@ -59,30 +62,30 @@ function snakeCollision():boolean;
     OUTPUT
         snakeCollision: if collision, true; if not, false [boolean]
 *)
-//? 问题：是否可以不用循环，直接令body[len,1]和body[len,2]满足两个if条件，就可以判断是否出界
-//? 回复：理论上可行，待实测
-var tmp:integer;
 begin
 	snakeCollision := false;
-	for tmp:=1 to len do
-	begin
-		if (body[tmp,1] < 2) or (body[tmp,1] >= 80) then
-			snakeCollision := true;
-			break;
-		if (body[tmp,2] < 4) or (body[tmp,2] >= 24) then
-			snakeCollision := true;
-			break;
-	end;
+    if (body[1,1] < 2) or (body[1,1] >= space_width) then
+        snakeCollision := true;
+    if (body[1,2] < 4) or (body[1,2] >= space_height-1) then
+        snakeCollision := true;
 end;
 
-//蛇自己撞自己
-function snake_contains(x,y:integer):boolean;
-var tmp:integer;
+function snakeContain(x,y:integer):boolean;
+(*  Check if a point is already existed in snake body
+    INPUT
+        x: X coordinate [int]
+        y: Y coordinate [int]
+    OUTPUT
+        snakeContain: if existant, true; else, false [boolean]
+*)
+// var i:integer;
 begin
-	snake_contains := false;
-	for tmp:=1 to len do
+	snakeContain := false;
+	for i := 1 to len do
 	begin
-		if (body[tmp,1] = x) and (body[tmp,2] = y) then snake_contains := true;
+		if (body[i,1] = x) and (body[i,2] = y) then
+            snakeContain := true;
+            break;
 	end;
 end;
 
@@ -93,7 +96,7 @@ end;
 //! ----------------------------------------------------------------------------
 //* draw perimeter
 procedure drawbox(x0,y0,width,height:integer; title:string);
-(*  Draw a box (for title board, wall, ...)
+(*  Draw a box (for title board, perimeter, ...)
     INPUT
         x0: X coordinate of top-left point [int]
         y0: Y coordinate of top-left point [int]
@@ -105,10 +108,10 @@ procedure drawbox(x0,y0,width,height:integer; title:string);
 *)
 var i1,i2:integer;
 begin
-	for i2:=1 to height do
+	for i2 := 1 to height do
 	begin
 		GotoXY(x0,y0+i2-1);
-		for i1:=1 to width do
+		for i1 := 1 to width do
 		begin
 			if (i2 = 1) or (i2 = height) then
 				if (i1 = 1) or (i1 = width) then
@@ -129,6 +132,62 @@ begin
 		write(title);
 	end;
 end;
+
+//* make wall
+procedure makeHorizontalWalls(wall_number,wall_length,wall_amount:Integer);
+(* Make horizontal walls
+*)
+var ind,l,pos,x,y:Integer;
+begin
+    setLength(hWalls, wall_amount, 1);
+    for ind := 0 to wall_number-1 do
+    begin
+        // find a random position for new wall
+        repeat
+            x := random(space_width-3-wall_length)+2;
+            y := random(space_height-5-wall_length)+4;
+        until not snakeContain(x,y);
+        // build wall
+        for l := 1 to wall_length do
+        begin
+            pos := ind * wall_length + l - 1;
+            hWalls[pos,1] := x + l - 1;
+            hWalls[pos,2] := y;
+            GotoXY(hWalls[pos,1],hWalls[pos,2]);
+            textColor(lightblue);
+            write('-');
+        end;
+    end;
+    textColor(lightred); // reset color to red
+end;
+
+procedure makeVerticalWalls(wall_number,wall_length,wall_amount:Integer);
+(* Make vertical walls
+*)
+var ind,l,pos,x,y:Integer;
+begin
+    setLength(vWalls, wall_amount, 1);
+    for ind := 0 to wall_number-1 do
+    begin
+        // find a random position for new wall
+        repeat
+            x := random(space_width-3-wall_length)+2;
+            y := random(space_height-5-wall_length)+4;
+        until not snakeContain(x,y);
+        // build wall
+        for l := 1 to wall_length do
+        begin
+            pos := ind * wall_length + l - 1;
+            vWalls[pos,1] := x;
+            vWalls[pos,2] := y + l - 1;
+            GotoXY(vWalls[pos,1],vWalls[pos,2]);
+            textColor(lightblue);
+            write('|');
+        end;
+    end;
+    textColor(lightred); // reset color to red
+end;
+
 
 //* draw snake
 procedure drawsnake;
@@ -157,17 +216,17 @@ procedure snakeDeath;
         (none)
 *)
 begin
-	textcolor(lightblue);
+	textColor(lightblue);
 	drawbox(1,11,80,3,'');
 	GotoXY(37,12);
-	textcolor(lightred);
+	textColor(lightred);
 	write('Game Over');
-	// textcolor(lightgray);
+	// textColor(lightgray);
 	GotoXY(20,20);
 	halt;
 end;
 
-//* after snake eating a bean
+//* after snake eating a normal bean
 procedure snakeGrow(x,y:integer);
 (*  Increase the length of snake if it eats a bean
     INPUT
@@ -184,39 +243,62 @@ begin
 	GotoXY(x,y);
 	write('x');
 	GotoXY(2,2); // move cursor back to score panel
-	textcolor(white);
+	textColor(white);
 	write(' score: ',score);
-	textcolor(lightred);
+	textColor(lightred);
+end;
+
+procedure checkSnakeStatus(x,y,ind:integer);
+(*  Find out which kind of bean that has been eaten by snake
+    INPUT
+        x: X coordinate [int]
+        y: Y coordinate [int]
+        ind: index of bean [int]
+    OUTPUT
+*)
+begin
+    case beans[ind,3] of
+        0: begin snakeGrow(x,y); end; // normal bean
+        1: begin d := d - 100; end; // speed-up bean
+        2: begin d := d + 100; end; // speed-down bean
+        3: begin snakeDeath; end; // bomb
+    end;
 end;
 
 
-procedure initiateBean(n:integer);
+procedure initiateBean(amount:integer);
 (*  Initiate beans at the begining of game
     INPUT
-        n: initial number of beans [int]
+        amount: initial number of beans [int]
     OUTPUT
         (none)
 *)
-var x,y,i:integer;
+var x,y,ind:integer;
 begin
-    i := 0;
-    repeat
-        repeat // random position for beans
-            x := random(78)+1;
-            y := random(19)+4;
-        until not snake_contains(x,y);
-        beanX := x;
-        beanY := y;
+    setLength(beans, amount, 3);
+    for ind := 0 to amount-1 do
+    begin
+        // find a random position for new bean
+        repeat
+            x := random(space_width-3)+2;
+            y := random(space_height-5)+4;
+        until not snakeContain(x,y);
+        beans[ind,1] := x;
+        beans[ind,2] := y;
+        beans[ind,3] := random(4); //TODO Ensure there is at least 1 normal bean
+        // draw different beans on screen
         GotoXY(x,y);
-        // inc(l); //? 回复：我想起之前那个l是拿来干嘛的了……用来控制字母A，B，C，……来标记豆子
-        textcolor(lightgreen);
-        write('*');
-        inc(i)
-    until i = n;
-    textcolor(lightred); // reset color to red
+        case beans[ind,3] of
+            0: begin textColor(green); write('*'); end; // normal bean
+            1: begin textColor(magenta); write('>'); end; // speed-up bean
+            2: begin textColor(cyan); write('<'); end; // speed-down bean
+            3: begin textColor(black); write('X'); end; // bomb
+	    end;
+        textColor(lightred); // reset color to red
+    end;
 end;
 
-procedure refreshBean;
+procedure refreshBean(ind:Integer);
 (*  Refresh a new bean after eating
     INPUT
         (none)
@@ -225,17 +307,20 @@ procedure refreshBean;
 *)
 var x,y:integer;
 begin
-    repeat // random position for beans
+    repeat // random position for new bean
         x := random(78)+1;
         y := random(19)+4;
-    until not snake_contains(x,y);
-	beanX := x;
-	beanY := y;
+    until not snakeContain(x,y);
+	beans[ind,1] := x;
+	beans[ind,2] := y;
 	GotoXY(x,y);
-	// inc(l); //? 回复：我想起之前那个l是拿来干嘛的了……用来控制字母A，B，C，……来标记豆子
-	textcolor(lightgreen);
-	write('*');
-	textcolor(lightred);
+	case beans[ind,3] of
+        0: begin textColor(green); write('*'); end; // normal bean
+        1: begin textColor(magenta); write('>'); end; // speed-up bean
+        2: begin textColor(cyan); write('<'); end; // speed-down bean
+        3: begin textColor(black); write('X'); end; // bomb
+    end;
+	textColor(lightred);
 end;
 
 //* Control snake to move
@@ -247,107 +332,94 @@ procedure movesnake;
         (none)
 *)
 var x,y,wasx,wasy,tmp:integer;
-	died:boolean;
 begin
+    // get direction from main program
 	case dir of
-		1: begin x :=  1; y := 0; end; // turn left
-		2: begin x :=  0; y := 1; end; // turn right
-		3: begin x := -1; y := 0; end; // turn down
-		4: begin x :=  0; y :=-1; end; // turn up
+		1: begin x :=  1; y := 0; end; // right (i.e. east)
+		2: begin x :=  0; y := 1; end; // down (i.e. south)
+		3: begin x := -1; y := 0; end; // left (i.e. west)
+		4: begin x :=  0; y :=-1; end; // up (i.e. north)
 	end;
+    // ***** Moving *****
 	GotoXY(body[1,1], body[1,2]); write('x'); // change snake head to body
-	GotoXY(body[len,1], body[len,2]); write(' ');
-	wasx:=body[len,1];
-	wasy:=body[len,2];
-	died := false;
-	if (snake_contains(body[1,1] + x, body[1,2] + y)) then
-		died := true; //* 若新的点已经包含在蛇身里面，则蛇死亡
+	GotoXY(body[len,1], body[len,2]); write(' '); // change snake tail to empty
+	wasx := body[len,1];
+	wasy := body[len,2];
+    // check if snake meets itself
+	if (snakeContain(body[1,1] + x, body[1,2] + y)) then
+        snakeDeath;
+    // change segment of snake: from previous position to next position
 	for tmp:=2 to len do
 	begin
 		body[len-tmp+2,1] := body[len-tmp+1,1];
 		body[len-tmp+2,2] := body[len-tmp+1,2];
 	end;
+    // change snake head: add new position
 	body[1,1] := body[1,1] + x;
 	body[1,2] := body[1,2] + y;
 	GotoXY(body[1,1], body[1,2]); write('o');
-	if (died) then snakeDeath;
-	if (snake_contains(beanX,beanY)) then // eats bean
-	begin
-		snakeGrow(wasx,wasy);
-		refreshBean;
-	end;
-	if (snakeCollision) then snakeDeath; // meets wall
+    // ***** Eating *****
+    for tmp := 0 to beans_amount-1 do
+    begin
+        if (snakeContain(beans[tmp,1],beans[tmp,2])) then // a bean is eaten
+        begin
+            checkSnakeStatus(wasx, wasy, tmp);
+            // snakeGrow(wasx,wasy);
+            refreshBean(tmp);
+            break;
+        end;
+    end;
+    // ***** Hitting *****
+    for tmp := 0 to wall_amount-1 do
+    begin
+        if (snakeContain(hWalls[tmp,1],hWalls[tmp,2])) or (snakeContain(vWalls[tmp,1],vWalls[tmp,2])) then // snake meets wall
+        snakeDeath
+    end;
+	if (snakeCollision) then snakeDeath; // meets perimeters
 end;
 
-procedure intros(var diff,start:string);
-begin
-	gotoxy(24,4);
-	writeln('Bienvenue au jeu de serpent!');
-	gotoxy(26,5);
-	writeln('Voici la règle de ce jeu：');
-	gotoxy(2,6);
-	writeln('Vous pouvez utiliser les flèche sur le clavier pour controler la direction');
-	gotoxy(8,7);
-	writeln('Vous ne pouvez pas touche la mur et aussi la corps de la serpent');
-	gotoxy(17,8);
-	writeln('Maintenant vous pouvez choisir la difficulté');
-	gotoxy(19,9);
-	writeln('Entrez f pour facile et d pour difficile');
-	readln(diff);
-	if diff='f' then
-	begin
-		gotoxy(23,10);
-		writeln('Vous avez choisir la mode facile');
-	end;
-	if diff='d' then
-	begin
-		gotoxy(21,10);
-		writeln('Vous avez choisir la mode difficile');
-	end;
-	gotoxy(24,11);
-	writeln('Entrez s pour commencer la jeu');
-	readln(start);
-end;
+
+
 //! ----------------------------------------------------------------------------
 //!                                  MAIN PROGRAM
 //! ----------------------------------------------------------------------------
-var diff:string;
-	start:string;
 begin
 	// ***** Initiation *****
 	ClrScr;
 	Randomize;
-	len:=3; // initial length of snake
-	d:=300; // time to delay
-	// l:=64; //? 回复：见210行
+	len := 3; // initial length of snake
+	d := 300; // time to delay
+    beans_amount := 10; // initial amount of beans
+    wall_number := 4;
+    wall_length := 3;
+    wall_amount := wall_number * wall_length;
 	score:=0;
-	dir:=1; // default direction {1=east,2=south;3=west,4=north}
-	// initiate snake body
+	dir:=1; // default direction {1=east, 2=south, 3=west, 4=north}
+    space_width := 80; // width of gaming space
+    space_height := 24; // height of gaming space
+	// initiate snake
 	for i:=1 to 255 do
 		for j:=1 to 2 do
 			body[i,j] := 0; // 初始化数组（蛇身），让数组里面所有的值都=0
-	body[1,1] := 4;
+	body[1,1] := 6;
 	body[1,2] := 12;
-	body[2,1] := 3;
+	body[2,1] := 5;
 	body[2,2] := 12;
-	body[3,1] := 2;
+	body[3,1] := 4;
 	body[3,2] := 12;
 	// print perimeter on screen
-	textcolor(lightblue);
-	drawbox(1,1,80,24,''); 
-	drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');
-	intros(diff,start);
-	if start = 's' then
-	begin
+	textColor(lightblue);
+	drawbox(1,1,space_width,space_height,''); // 画出蛇运动的空间，也就是你们常说的wall
+	drawbox(1,1,space_width,3,'Jeu de Serpent (c) 2018');// 游戏标题
 	// print initial snake on screen
-	ClrScr;
-	textcolor(lightred);
-	drawbox(1,1,80,24,''); 
-	drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');
-	initiateBean(5); // initiate beans by a given number
+	textColor(lightred);
 	drawsnake;
 	GotoXY(2,2);
 	writeln(' score: ');
+    // initiate beans
+	initiateBean(beans_amount); // initiate beans by a given number
+    makeHorizontalWalls(wall_number,wall_length,wall_amount); // create horizontal walls
+    makeVerticalWalls(wall_number,wall_length,wall_amount); // create vertical walls
 	// ***** Start Game *****
 	repeat
 		delay(d);
@@ -358,10 +430,10 @@ begin
 			begin
 				k:=readkey;
 				case k of
-					#77: dirnew := 1; // left
-					#80: dirnew := 2; // right
-					#75: dirnew := 3; // up
-					#72: dirnew := 4; // down
+					#77: dirnew := 1; // right (i.e. east)
+					#80: dirnew := 2; // down (i.e. south)
+					#75: dirnew := 3; // left (i.e. west)
+					#72: dirnew := 4; // up (i.e. north)
 				end;
 				if (dir = 1) and (dirnew <> 3) then dir := dirnew;
 				if (dir = 2) and (dirnew <> 4) then dir := dirnew;
@@ -373,7 +445,6 @@ begin
 		movesnake;
 		GotoXY(2,2);
 	until false;
-	textcolor(lightgray);
+	textColor(lightgray);
 	GotoXY(1,25);
-	end;
 end.
