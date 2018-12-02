@@ -30,9 +30,9 @@ uses crt,math;
 //? 问题：为什么很多procedure里的variable没有写成entree就可以引用？
 //? 回复：因为这些var都是在主程序中定义的，而那些procedure也只是在主程序中调用的，所以这类var
 //?      就类同全局变量了
-//todo:简单模式同时显示多个食物
+//todo:简单模式同时显示多个食物 => Done !
 //todo:困难模式的墙
-//todo:困难模式的食物以及吃完食物后的效果
+//todo:困难模式的食物以及吃完食物后的效果 => Done !
 
 //! ----------------------------------------------------------------------------
 //!                              VARIABLE DECLARATION
@@ -61,7 +61,7 @@ function snakeCollision():boolean;
 *)
 //? 问题：是否可以不用循环，直接令body[len,1]和body[len,2]满足两个if条件，就可以判断是否出界
 //? 回复：理论上可行，待实测
-var tmp:integer;
+// var tmp:integer;
 begin
 	snakeCollision := false;
 	// for tmp:=1 to len do
@@ -165,17 +165,17 @@ procedure snakeDeath;
         (none)
 *)
 begin
-	textcolor(lightblue);
+	textColor(lightblue);
 	drawbox(1,11,80,3,'');
 	GotoXY(37,12);
-	textcolor(lightred);
+	textColor(lightred);
 	write('Game Over');
-	// textcolor(lightgray);
+	// textColor(lightgray);
 	GotoXY(20,20);
 	halt;
 end;
 
-//* after snake eating a bean
+//* after snake eating a normal bean
 procedure snakeGrow(x,y:integer);
 (*  Increase the length of snake if it eats a bean
     INPUT
@@ -192,9 +192,19 @@ begin
 	GotoXY(x,y);
 	write('x');
 	GotoXY(2,2); // move cursor back to score panel
-	textcolor(white);
+	textColor(white);
 	write(' score: ',score);
-	textcolor(lightred);
+	textColor(lightred);
+end;
+
+procedure checkSnakeStatus(x,y,ind:integer);
+begin
+    case beans[ind,3] of
+        0: begin snakeGrow(x,y); end; // normal bean
+        1: begin d := d - 100; end; // speed-up bean
+        2: begin d := d + 100; end; // speed-down bean
+        3: begin snakeDeath; end; // bomb
+    end;
 end;
 
 
@@ -207,19 +217,27 @@ procedure initiateBean(amount:integer);
 *)
 var x,y,ind:integer;
 begin
-    setLength(beans, amount, 2);
+    setLength(beans, amount, 3);
     for ind := 0 to amount-1 do
     begin
-        repeat // generate a random position for new bean
+        // find a random position for new bean
+        repeat
             x := random(78)+1;
             y := random(19)+4;
         until not snakeContain(x,y);
         beans[ind,1] := x;
         beans[ind,2] := y;
+        beans[ind,3] := random(4); //TODO Ensure there is at least 1 normal bean
+        // draw different beans on screen
         GotoXY(x,y);
-        textcolor(lightgreen); // set color to green for marking beans
-        write('*');
-        textcolor(lightred); // reset color to red
+        case beans[ind,3] of
+            0: begin textColor(green); write('*'); end; // normal bean
+            1: begin textColor(magenta); write('>'); end; // speed-up bean
+            2: begin textColor(cyan); write('<'); end; // speed-down bean
+            3: begin textColor(black); write('X'); end; // bomb
+	    end;
+        // reset color to red
+        textColor(lightred);
     end;
 end;
 
@@ -239,9 +257,9 @@ begin
 	beans[ind,1] := x;
 	beans[ind,2] := y;
 	GotoXY(x,y);
-	textcolor(lightgreen);
+	textColor(lightgreen);
 	write('*');
-	textcolor(lightred);
+	textColor(lightred);
 end;
 
 //* Control snake to move
@@ -268,7 +286,7 @@ begin
 	wasy := body[len,2];
     // check if snake meets itself
 	if (snakeContain(body[1,1] + x, body[1,2] + y)) then
-        snakeDeath; //* 若新的点已经包含在蛇身里面，则蛇死亡，意即蛇碰到自己
+        snakeDeath;
     // change segment of snake: from previous position to next position
 	for tmp:=2 to len do
 	begin
@@ -284,7 +302,8 @@ begin
     begin
         if (snakeContain(beans[tmp,1],beans[tmp,2])) then // a bean is eaten
         begin
-            snakeGrow(wasx,wasy);
+            checkSnakeStatus(wasx, wasy, tmp);
+            // snakeGrow(wasx,wasy);
             refreshBean(tmp);
             break;
         end;
@@ -302,7 +321,7 @@ begin
 	ClrScr;
 	Randomize;
 	len := 3; // initial length of snake
-	d := 200; // time to delay
+	d := 300; // time to delay
     beans_amount := 10; // initial amount of beans
 	score:=0;
 	dir:=1; // default direction {1=east, 2=south, 3=west, 4=north}
@@ -317,11 +336,11 @@ begin
 	body[3,1] := 4;
 	body[3,2] := 12;
 	// print perimeter on screen
-	textcolor(lightblue);
+	textColor(lightblue);
 	drawbox(1,1,80,24,''); // 画出蛇运动的空间，也就是你们常说的wall
 	drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');// 游戏标题
 	// print initial snake on screen
-	textcolor(lightred);
+	textColor(lightred);
 	drawsnake;
 	GotoXY(2,2);
 	writeln(' score: ');
@@ -352,6 +371,6 @@ begin
 		movesnake;
 		GotoXY(2,2);
 	until false;
-	textcolor(lightgray);
+	textColor(lightgray);
 	GotoXY(1,25);
 end.
