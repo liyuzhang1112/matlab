@@ -24,13 +24,18 @@ Superviseur: Jean-Baptiste LOUVET
 - constant名用：全部大写字母
 *******************************************************************************)
 program serpent;
-uses crt,math;
+uses crt,math,rank;
 
 //? 问题：为什么很多procedure里的variable没有写成entree就可以引用？
 //? 回复：因为这些var都是在主程序中定义的，而那些procedure也只是在主程序中调用的，所以这类var
 //?      就类同全局变量了
 //todo:食物类型
-
+//1 pomme : fait gagner 1 points et fait gagner en taille le serpent.
+//2 bombe : fait perdre une vie, disparaît après 10 secondes.
+//3 coeur : fait gagner une vie, disparaît après 5 secondes
+//4 fraise : fait gagner 10 points, disparaît après 5 secondes
+//5 diamant : écran rempli de pommes, disparaît après 5 secondes
+//6 shadow: speed increases for 5 seconds.
 
 //! ----------------------------------------------------------------------------
 //!                              VARIABLE DECLARATION
@@ -215,15 +220,47 @@ procedure snakeDeath;
     OUTPUT
         (none)
 *)
+
 begin
 	textColor(lightblue);
 	drawbox(1,11,80,3,'');
 	GotoXY(37,12);
 	textColor(lightred);
 	write('Game Over');
-	// textColor(lightgray);
+	textColor(lightgray);
 	GotoXY(20,20);
-	halt;
+	delay(1000);
+end;
+
+
+procedure creatFile;
+// store the score 
+var f:file of ranking;
+	r:ranking;
+	i:integer;
+begin	
+    assign(f,'store.dat');
+	Reset(f);
+	while not eof(f) do
+	i:=0;
+	repeat
+	read(f,r);
+	i:=i+1;
+	until (r.name[i]='');
+	begin
+		ClrScr;
+		textcolor(lightred);
+		gotoxy(20,5);
+		writeln('Entrez votre nom');
+		readln(r.name[i]);
+		writeln('Entrez votre point');
+		readln(r.score[i]);
+	end;
+	assign(f,'ranking');
+	rewrite(f);
+//todo:排序procedure
+	write(f,r);
+	close(f);
 end;
 
 //* after snake eating a normal bean
@@ -245,7 +282,7 @@ begin
 	write('x');
 	GotoXY(2,2); // move cursor back to score panel
 	textColor(white);
-	write(' score: ',score);
+	write(' Point: ',score);
 	textColor(lightred);
 end;
 
@@ -286,7 +323,7 @@ begin
         until not snakeContain(x,y);
         beans[ind,1] := x;
         beans[ind,2] := y;
-        beans[ind,3] := random(4); //TODO Ensure there is at least 1 normal bean
+        beans[ind,3] := random(4); //TODO Ensure there exists at least 1 normal bean
         // draw different beans on screen
         GotoXY(x,y);
         case beans[ind,3] of
@@ -348,7 +385,10 @@ begin
 	wasy := body[len,2];
     // check if snake meets itself
 	if (snakeContain(body[1,1] + x, body[1,2] + y)) then
-        snakeDeath;
+        begin
+            snakeDeath;
+            creatFile;
+        end;
     // change segment of snake: from previous position to next position
 	for tmp:=2 to len do
 	begin
@@ -376,10 +416,17 @@ begin
         for tmp := 0 to wall_amount-1 do
         begin
             if (snakeContain(hWalls[tmp,1],hWalls[tmp,2])) or (snakeContain(vWalls[tmp,1],vWalls[tmp,2])) then // snake meets wall
-            snakeDeath
+            begin
+                snakeDeath;
+                creatFile;
+            end;
         end;
     end;
-	if (snakeCollision) then snakeDeath; // meets perimeters
+	if (snakeCollision) then 
+    begin
+        snakeDeath; // meets perimeters
+        creatFile;
+    end;
 end;
 
 procedure intros;
@@ -460,7 +507,7 @@ begin
         textColor(lightred);
         drawsnake;
         GotoXY(2,2);
-        writeln(' score: ');
+        writeln(' Point: ',score);
         // initiate beans
         initiateBean(beans_amount); // initiate beans by a given number
         if diff='d' then
@@ -488,7 +535,11 @@ begin
                     if (dir = 3) and (dirnew <> 1) then dir := dirnew;
                     if (dir = 4) and (dirnew <> 2) then dir := dirnew;
                 end;
-                if (k = #27) then snakeDeath; // press ESC button
+                if (k = #27) then 
+                begin
+                    snakeDeath; // press ESC button
+                    creatFile;
+                end;
             end;
             movesnake;
             GotoXY(2,2);
