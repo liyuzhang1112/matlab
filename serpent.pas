@@ -32,10 +32,10 @@ uses crt,math,rank;
 //todo:食物类型
 //1 pomme : fait gagner 1 points et fait gagner en taille le serpent.
 //2 bombe : fait perdre une vie, disparaît après 10 secondes.
-//3 coeur : fait gagner une vie, disparaît après 5 secondes
+//3 shadow: speed increases for 5 seconds.
 //4 fraise : fait gagner 10 points, disparaît après 5 secondes
 //5 diamant : écran rempli de pommes, disparaît après 5 secondes
-//6 shadow: speed increases for 5 seconds.
+
 
 //! ----------------------------------------------------------------------------
 //!                              VARIABLE DECLARATION
@@ -139,7 +139,7 @@ begin
 end;
 
 //* make wall
-procedure makeHorizontalWalls(wall_number,wall_length,wall_amount:Integer);
+procedure horizontalWalls(wall_number,wall_length,wall_amount:Integer);
 (* Make horizontal walls
 *)
 var ind,l,pos,x,y:Integer;
@@ -166,7 +166,7 @@ begin
     textColor(lightred); // reset color to red
 end;
 
-procedure makeVerticalWalls(wall_number,wall_length,wall_amount:Integer);
+procedure verticalWalls(wall_number,wall_length,wall_amount:Integer);
 (* Make vertical walls
 *)
 var ind,l,pos,x,y:Integer;
@@ -232,30 +232,28 @@ begin
 	delay(1000);
 end;
 
-
+//* store the score 
 procedure creatFile;
-// store the score 
+
 var f:file of ranking;
 	r:ranking;
 	i:integer;
 begin	
-    assign(f,'store.dat');
+    assign(f,'store.txt');
 	Reset(f);
 	while not eof(f) do
-	i:=0;
-	repeat
-	read(f,r);
-	i:=i+1;
-	until (r.name[i]='');
-	begin
-		ClrScr;
-		textcolor(lightred);
-		gotoxy(20,5);
-		writeln('Entrez votre nom');
-		readln(r.name[i]);
-		writeln('Entrez votre point');
-		readln(r.score[i]);
-	end;
+    i:=0;
+    repeat
+        read(f,r);
+        i:=i+1;
+    until (r.name[i]='');
+    ClrScr;
+    textcolor(lightred);
+    gotoxy(20,5);
+    writeln('Entrez votre nom');
+    readln(r.name[i]);
+    writeln('Entrez votre point');
+    readln(r.score[i]);
 	assign(f,'ranking');
 	rewrite(f);
 //todo:排序procedure
@@ -264,7 +262,7 @@ begin
 end;
 
 //* after snake eating a normal bean
-procedure snakeGrow(x,y:integer);
+procedure snakeGrow(x,y,tmp:integer);
 (*  Increase the length of snake if it eats a bean
     INPUT
         x: X coordinate [int]
@@ -273,8 +271,9 @@ procedure snakeGrow(x,y:integer);
         (none)
 *)
 begin
-	inc(score,1); // i.e. score = score + 1
-	inc(len);
+    if (beans[tmp,1]=4) then  inc(score,10); // i.e. score = score + 10
+    if (beans[tmp,1]=4) then  inc(score,1);
+	inc(len,1);
     inc(d,-10);
 	body[len,1] := x;
 	body[len,2] := y;
@@ -286,6 +285,7 @@ begin
 	textColor(lightred);
 end;
 
+
 procedure checkSnakeStatus(x,y,ind:integer);
 (*  Find out which kind of bean that has been eaten by snake
     INPUT
@@ -296,10 +296,15 @@ procedure checkSnakeStatus(x,y,ind:integer);
 *)
 begin
     case beans[ind,3] of
-        0: begin snakeGrow(x,y); end; // normal bean
-        1: begin d := d - 100; end; // speed-up bean
-        2: begin d := d + 100; end; // speed-down bean
-        3: begin snakeDeath; end; // bomb
+        1: begin snakeGrow(x,y,ind); end; // normal bean
+        2: begin snakeDeath; end; // bomb
+        3: begin 
+           
+           end; // shadow
+        4: begin snakeDeath; end; // fraise
+        5: begin 
+
+           end;// diamond
     end;
 end;
 
@@ -311,7 +316,7 @@ procedure initiateBean(amount:integer);
     OUTPUT
         (none)
 *)
-var x,y,ind:integer;
+var x,y,ind,r,randomfood:integer;
 begin
     setLength(beans, amount, 3);
     for ind := 0 to amount-1 do
@@ -323,15 +328,27 @@ begin
         until not snakeContain(x,y);
         beans[ind,1] := x;
         beans[ind,2] := y;
-        beans[ind,3] := random(4); //TODO Ensure there exists at least 1 normal bean
-        // draw different beans on screen
-        GotoXY(x,y);
-        case beans[ind,3] of
-            0: begin textColor(green); write('*'); end; // normal bean
-            1: begin textColor(magenta); write('>'); end; // speed-up bean
-            2: begin textColor(cyan); write('<'); end; // speed-down bean
-            3: begin textColor(black); write('X'); end; // bomb
-	    end;
+        begin
+            r := random(40)+1;
+            Case r Of 
+                37:   randomfood := 2;
+                38:   randomfood := 3;
+                39:   randomfood := 4;
+                40:   randomfood := 5;
+            Else
+                randomfood := 1;
+            end;        
+            beans[ind,3] := randomfood; //TODO Ensure there exists at least 1 normal bean
+            // draw different beans on screen
+            GotoXY(x,y);
+            case beans[ind,3] of
+                1: begin textColor(green); write('*'); end; // normal bean
+                2: begin textColor(black); write('X'); end; // bomb
+                3: begin textColor(cyan); write('<'); end; // shadow
+                4: begin textColor(magenta); write('>'); end; // fraise
+                5: begin textColor(black); write('X'); end;// diamond
+            end;
+        end;
         textColor(lightred); // reset color to red
     end;
 end;
@@ -343,7 +360,7 @@ procedure refreshBean(ind:Integer);
     OUTPUT
         (none)
 *)
-var x,y:integer;
+var x,y,r,randomfood:integer;
 begin
     repeat // random position for new bean
         x := random(78)+1;
@@ -352,13 +369,28 @@ begin
 	beans[ind,1] := x;
 	beans[ind,2] := y;
 	GotoXY(x,y);
-	case beans[ind,3] of
-        0: begin textColor(green); write('*'); end; // normal bean
-        1: begin textColor(magenta); write('>'); end; // speed-up bean
-        2: begin textColor(cyan); write('<'); end; // speed-down bean
-        3: begin textColor(black); write('X'); end; // bomb
+	begin
+        r := random(40)+1;
+            Case r Of 
+                37:   randomfood := 2;
+                38:   randomfood := 3;
+                39:   randomfood := 4;
+                40:   randomfood := 5;
+        Else
+            randomfood := 1;
+        end;        
+        beans[ind,3] := randomfood; //TODO Ensure there exists at least 1 normal bean
+        GotoXY(x,y);
+        case beans[ind,3] of
+            1: begin textColor(green); write('*'); end; // normal bean
+            2: begin textColor(black); write('X'); end; // bomb
+            3: begin textColor(cyan); write('<'); end; // coeur
+            4: begin textColor(magenta); write('>'); end; // fraise
+            5: begin textColor(black); write('X'); end;// diamond
+            6: begin textColor(blue); write('X'); end;//shadow
+	    end;
+	    textColor(lightred);
     end;
-	textColor(lightred);
 end;
 
 //* Control snake to move
@@ -405,7 +437,7 @@ begin
         if (snakeContain(beans[tmp,1],beans[tmp,2])) then // a bean is eaten
         begin
             checkSnakeStatus(wasx, wasy, tmp);
-            // snakeGrow(wasx,wasy);
+            // snakeGrow(wasx,wasy,tmp);
             refreshBean(tmp);
             break;
         end;
@@ -512,8 +544,8 @@ begin
         initiateBean(beans_amount); // initiate beans by a given number
         if diff='d' then
         begin
-            makeHorizontalWalls(wall_number,wall_length,wall_amount); // create horizontal walls
-            makeVerticalWalls(wall_number,wall_length,wall_amount); // create vertical walls
+            horizontalWalls(wall_number,wall_length,wall_amount); // create horizontal walls
+            verticalWalls(wall_number,wall_length,wall_amount); // create vertical walls
         end;
         // ***** Start Game *****
         repeat
