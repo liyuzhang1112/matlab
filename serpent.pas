@@ -2,27 +2,12 @@
 INSA ROUEN NORMANDIE
 DEPARTEMENT STPI - PROJET INFO
 
-Liyu ZHANG, Tonglin Yan, XXXXX
+Liyu ZHANG, Tonglin Yan, Augustin SCHWARTZ
 Superviseur: Jean-Baptiste LOUVET
 
 20 December 2018
 *******************************************************************************)
 
-//!  编 程 规 范
-(******************************************************************************
-- 不！要！改！文！件！名！：要改文件直接更改即可，不要建立文件副本，然后重命名为 "v1, v2, new
-    version, old version"这样
-- 以下是在VS code里可以不同颜色区分的注释符：
-    //! 表示重要注释
-    //? 表示你们有疑问，不懂的地方
-    //TODO 表示待完成的工作
-    //* 其它任何你们想要和普通注释区分开的地方
-- 代码宽度不要超过80列（VS Code左下角 setting -> 搜关键字“Word Wrap Column”然后设置成80）
-- function名和procedure名用：minusculeMajusculeMajuscule 首单词小写，后续单词的首字母大
-  写
-- variable名用：全部小写字母，如有必要，单词间以“_”下划线区分
-- constant名用：全部大写字母
-*******************************************************************************)
 program serpent;
 uses crt,math,rank;
 
@@ -53,7 +38,8 @@ var i,j,len,dir,dirnew,beans_amount:Integer;
     d:SmallInt;
 	k:Char;
 	score:Integer;
-
+    f:file of ranking;
+	r:ranking;
 
 
 //! ----------------------------------------------------------------------------
@@ -196,8 +182,7 @@ end;
 
 //* draw snake
 procedure drawsnake;
-(*  Show snake on screen
-    INPUT
+(*  INPUT
         (none)
     OUTPUT
         (none)
@@ -214,8 +199,7 @@ end;
 
 //* Game over pop-up window
 procedure snakeDeath;
-(*  Show Game Over window
-    INPUT
+(*  INPUT
         (none)
     OUTPUT
         (none)
@@ -232,12 +216,74 @@ begin
 	delay(1000);
 end;
 
+
+//*reorder the rank
+procedure refreshRank(ind:integer);
+(*  INPUT
+        ind:the total number of player
+    OUTPUT
+        (none)
+*)
+var ind,pp,i,s,newp:integer;
+    n:string;
+begin
+    //start to refresh 
+    s:=score[ind];
+    n:=name[ind];
+    //newp find out positon of new record
+    newp:=0;
+    repeat
+        newp:=newp+1;
+    until (s>=score[newp]);
+    //check out if player played before
+    pp:=0;
+    repeat
+        pp:=pp+1;
+    until (n=name[pp]) or (pp=ind);
+    //player played before but not break his record
+    //n position of previous record of same player
+    if (name[pp]=n) and (score[pp]>=s) then
+        begin
+            name[ind]:='';
+            score[ind]:=0;
+        end
+    //player played before and break his record
+    else if (name[pp]=n) and (score[pp]<s) then
+        begin
+            for i:=pp downto newp+1 do 
+            begin
+                score[i]:=score[i-1];
+                name[i]:=name[i-1];
+            end;  
+            score[newp]:=s;
+            name[newp]:=n;
+            name[ind]:='';
+            score[ind]:=0;
+        end 
+    //player haven't played before
+    else
+        begin
+            for i:=ind downto newp+1 do 
+            begin
+                score[i]:=score[i-1];
+                name[i]:=name[i-1];
+            end;    
+            score[newp]:=s;
+            name[newp]:=name[ind];   
+        end;
+    for i:=1 to max do
+    begin
+        write(name[i],' ',score[i]);
+        writeln();
+    end;
+end. 
+
+
+
 //* store the score 
 procedure creatFile;
 
-var f:file of ranking;
-	r:ranking;
-	i:integer;
+var i:integer;
 begin	
     assign(f,'store.txt');
 	Reset(f);
@@ -252,17 +298,18 @@ begin
     gotoxy(20,5);
     writeln('Entrez votre nom');
     readln(r.name[i]);
+//todo:直接读取分数
     writeln('Entrez votre point');
     readln(r.score[i]);
 	assign(f,'ranking');
 	rewrite(f);
-//todo:排序procedure
+//todo:procedure reorder
 	write(f,r);
 	close(f);
 end;
 
 //* after snake eating a normal bean
-procedure snakeGrow(x,y,tmp:integer);
+procedure snakeGrow(x,y,tmp:Integer;var score:Integer);
 (*  Increase the length of snake if it eats a bean
     INPUT
         x: X coordinate [int]
@@ -286,7 +333,7 @@ begin
 end;
 
 
-procedure checkSnakeStatus(x,y,ind:integer);
+procedure checkSnakeStatus(x,y,ind:integer;var socre:integer);
 (*  Find out which kind of bean that has been eaten by snake
     INPUT
         x: X coordinate [int]
@@ -296,12 +343,12 @@ procedure checkSnakeStatus(x,y,ind:integer);
 *)
 begin
     case beans[ind,3] of
-        1: begin snakeGrow(x,y,ind); end; // normal bean
+        1: begin snakeGrow(x,y,ind,score); end; // normal bean
         2: begin snakeDeath; end; // bomb
         3: begin 
            
            end; // shadow
-        4: begin snakeDeath; end; // fraise
+        4: begin snakeGrow(x,y,ind,score);  end; // fraise
         5: begin 
 
            end;// diamond
@@ -328,7 +375,7 @@ begin
         until not snakeContain(x,y);
         beans[ind,1] := x;
         beans[ind,2] := y;
-        begin
+    
             r := random(40)+1;
             Case r Of 
                 37:   randomfood := 2;
@@ -348,7 +395,7 @@ begin
                 4: begin textColor(magenta); write('>'); end; // fraise
                 5: begin textColor(black); write('X'); end;// diamond
             end;
-        end;
+    
         textColor(lightred); // reset color to red
     end;
 end;
@@ -436,8 +483,8 @@ begin
     begin
         if (snakeContain(beans[tmp,1],beans[tmp,2])) then // a bean is eaten
         begin
-            checkSnakeStatus(wasx, wasy, tmp);
-            // snakeGrow(wasx,wasy,tmp);
+            checkSnakeStatus(wasx, wasy, tmp,score);
+            // snakeGrow(wasx,wasy,tmp,score);
             refreshBean(tmp);
             break;
         end;
