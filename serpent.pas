@@ -14,7 +14,9 @@ uses crt,math,rank;
 //? 问题：为什么很多procedure里的variable没有写成entree就可以引用？
 //? 回复：因为这些var都是在主程序中定义的，而那些procedure也只是在主程序中调用的，所以这类var
 //?      就类同全局变量了
-//todo:食物类型
+//todo:type of beans
+//todo:point
+//todo:create a file to store the score
 //1 pomme : fait gagner 1 points et fait gagner en taille le serpent.
 //2 bombe : fait perdre une vie, disparaît après 10 secondes.
 //3 shadow: speed increases for 5 seconds.
@@ -224,56 +226,56 @@ procedure refreshRank(ind:integer);
     OUTPUT
         (none)
 *)
-var ind,pp,i,s,newp:integer;
+var pp,i,s,newp:integer;
     n:string;
 begin
     //start to refresh 
-    s:=score[ind];
-    n:=name[ind];
+    s:=r.score[ind];
+    n:=r.name[ind];
     //newp find out positon of new record
     newp:=0;
     repeat
         newp:=newp+1;
-    until (s>=score[newp]);
+    until (s>=r.score[newp]);
     //check out if player played before
     pp:=0;
     repeat
         pp:=pp+1;
-    until (n=name[pp]) or (pp=ind);
+    until (n=r.name[pp]) or (pp=ind);
     //player played before but not break his record
     //n position of previous record of same player
-    if (name[pp]=n) and (score[pp]>=s) then
+    if (r.name[pp]=n) and (r.score[pp]>=s) then
         begin
-            name[ind]:='';
-            score[ind]:=0;
+            r.name[ind]:='';
+            r.score[ind]:=0;
         end
     //player played before and break his record
-    else if (name[pp]=n) and (score[pp]<s) then
+    else if (r.name[pp]=n) and (r.score[pp]<s) then
         begin
             for i:=pp downto newp+1 do 
             begin
-                score[i]:=score[i-1];
-                name[i]:=name[i-1];
+                r.score[i]:=r.score[i-1];
+                r.name[i]:=r.name[i-1];
             end;  
-            score[newp]:=s;
-            name[newp]:=n;
-            name[ind]:='';
-            score[ind]:=0;
+            r.score[newp]:=s;
+            r.name[newp]:=n;
+            r.name[ind]:='';
+            r.score[ind]:=0;
         end 
     //player haven't played before
     else
         begin
             for i:=ind downto newp+1 do 
             begin
-                score[i]:=score[i-1];
-                name[i]:=name[i-1];
+                r.score[i]:=r.score[i-1];
+                r.name[i]:=r.name[i-1];
             end;    
-            score[newp]:=s;
-            name[newp]:=name[ind];   
+            r.score[newp]:=s;
+            r.name[newp]:=r.name[ind];   
         end;
     for i:=1 to max do
     begin
-        write(name[i],' ',score[i]);
+        write(r.name[i],' ',r.score[i]);
         writeln();
     end;
 end. 
@@ -298,12 +300,12 @@ begin
     gotoxy(20,5);
     writeln('Entrez votre nom');
     readln(r.name[i]);
-//todo:直接读取分数
+//todo:directly readln the score
     writeln('Entrez votre point');
     readln(r.score[i]);
 	assign(f,'ranking');
 	rewrite(f);
-//todo:procedure reorder
+    refreshRank(i);
 	write(f,r);
 	close(f);
 end;
@@ -345,12 +347,10 @@ begin
     case beans[ind,3] of
         1: begin snakeGrow(x,y,ind,score); end; // normal bean
         2: begin snakeDeath; end; // bomb
-        3: begin 
-           
+        3: begin //todo           
            end; // shadow
         4: begin snakeGrow(x,y,ind,score);  end; // fraise
-        5: begin 
-
+        5: begin //todo
            end;// diamond
     end;
 end;
@@ -365,7 +365,7 @@ procedure initiateBean(amount:integer);
 *)
 var x,y,ind,r,randomfood:integer;
 begin
-    setLength(beans, amount, 3);
+    setLength(beans, amount, 3);//? 这是啥
     for ind := 0 to amount-1 do
     begin
         // find a random position for new bean
@@ -375,27 +375,25 @@ begin
         until not snakeContain(x,y);
         beans[ind,1] := x;
         beans[ind,2] := y;
-    
-            r := random(40)+1;
-            Case r Of 
-                37:   randomfood := 2;
-                38:   randomfood := 3;
-                39:   randomfood := 4;
-                40:   randomfood := 5;
-            Else
-                randomfood := 1;
-            end;        
-            beans[ind,3] := randomfood; //TODO Ensure there exists at least 1 normal bean
-            // draw different beans on screen
-            GotoXY(x,y);
-            case beans[ind,3] of
-                1: begin textColor(green); write('*'); end; // normal bean
-                2: begin textColor(black); write('X'); end; // bomb
-                3: begin textColor(cyan); write('<'); end; // shadow
-                4: begin textColor(magenta); write('>'); end; // fraise
-                5: begin textColor(black); write('X'); end;// diamond
-            end;
-    
+        r := random(40)+1;
+        Case r Of 
+            37:   randomfood := 2;
+            38:   randomfood := 3;
+            39:   randomfood := 4;
+            40:   randomfood := 5;
+        Else
+            randomfood := 1;
+        end;        
+        beans[ind,3] := randomfood; //TODO beans in the wall
+        // draw different beans on screen
+        GotoXY(x,y);
+        case beans[ind,3] of
+            1: begin textColor(green); write('*'); end; // normal bean
+            2: begin textColor(black); write('X'); end; // bomb
+            3: begin textColor(cyan); write('<'); end; // shadow
+            4: begin textColor(magenta); write('>'); end; // fraise
+            5: begin textColor(black); write('X'); end;// diamond
+        end;
         textColor(lightred); // reset color to red
     end;
 end;
@@ -418,23 +416,22 @@ begin
 	GotoXY(x,y);
 	begin
         r := random(40)+1;
-            Case r Of 
-                37:   randomfood := 2;
-                38:   randomfood := 3;
-                39:   randomfood := 4;
-                40:   randomfood := 5;
+        Case r Of 
+            37:   randomfood := 2;
+            38:   randomfood := 3;
+            39:   randomfood := 4;
+            40:   randomfood := 5;
         Else
             randomfood := 1;
         end;        
-        beans[ind,3] := randomfood; //TODO Ensure there exists at least 1 normal bean
+        beans[ind,3] := randomfood; 
         GotoXY(x,y);
         case beans[ind,3] of
             1: begin textColor(green); write('*'); end; // normal bean
             2: begin textColor(black); write('X'); end; // bomb
-            3: begin textColor(cyan); write('<'); end; // coeur
+            3: begin textColor(cyan); write('<'); end; // shadow
             4: begin textColor(magenta); write('>'); end; // fraise
             5: begin textColor(black); write('X'); end;// diamond
-            6: begin textColor(blue); write('X'); end;//shadow
 	    end;
 	    textColor(lightred);
     end;
@@ -460,7 +457,7 @@ begin
     // ***** Moving *****
 	GotoXY(body[1,1], body[1,2]); write('x'); // change snake head to body
 	GotoXY(body[len,1], body[len,2]); write(' '); // change snake tail to empty
-	wasx := body[len,1];
+	wasx := body[len,1];//? position of tail ???
 	wasy := body[len,2];
     // check if snake meets itself
 	if (snakeContain(body[1,1] + x, body[1,2] + y)) then
@@ -513,9 +510,9 @@ begin
 	gotoxy(24,4);
 	writeln('Bienvenue au jeu de serpent!');
 	gotoxy(26,5);
-	writeln('Voici la règle de ce jeu：');
+	writeln('Voici les règles de ce jeu：');
 	gotoxy(2,6);
-	writeln('Vous pouvez utiliser les flèche sur le clavier pour controler la direction');
+	writeln('Vous pouvez utiliser les flèches sur le clavier pour controler la direction');
 	gotoxy(8,7);
 	writeln('Vous ne pouvez pas toucher les murs et le corps du serpent');
 	gotoxy(17,8);
@@ -559,13 +556,13 @@ begin
 	// initiate snake
 	for i:=1 to 255 do
 		for j:=1 to 2 do
-			body[i,j] := 0; // 初始化数组（蛇身），让数组里面所有的值都=0
-	        body[1,1] := 6;
-	        body[1,2] := 12;
-	        body[2,1] := 5;
-	        body[2,2] := 12;
-	        body[3,1] := 4;
-	        body[3,2] := 12;
+			body[i,j] := 0; // initial position of snake body and head
+    body[1,1] := 6;
+    body[1,2] := 12;
+    body[2,1] := 5;
+    body[2,2] := 12;
+    body[3,1] := 4;
+    body[3,2] := 12;
 	// print perimeter on screen
     textcolor(lightblue);
 	drawbox(1,1,space_width,space_height,'');
@@ -580,8 +577,8 @@ begin
         drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');
         initiateBean(5); // initiate beans by a given number
         textColor(lightblue);
-        drawbox(1,1,space_width,space_height,''); // 画出蛇运动的空间，也就是你们常说的wall
-        drawbox(1,1,space_width,3,'Jeu de Serpent (c) 2018');// 游戏标题
+        drawbox(1,1,space_width,space_height,''); //moving space, wall
+        drawbox(1,1,space_width,3,'Jeu de Serpent (c) 2018');// title of the game
         // print initial snake on screen
         textColor(lightred);
         drawsnake;
@@ -615,8 +612,9 @@ begin
                     if (dir = 4) and (dirnew <> 2) then dir := dirnew;
                 end;
                 if (k = #27) then 
+//?what is #27
                 begin
-                    snakeDeath; // press ESC button
+                    snakeDeath;
                     creatFile;
                 end;
             end;

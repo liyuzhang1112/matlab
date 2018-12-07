@@ -25,7 +25,7 @@ begin
     newp:=0;
     repeat
         newp:=newp+1;
-    until (s>=score[newp]);
+    until (s>=r.score[newp]);
     //check out if player played before
     pp:=0;
     repeat
