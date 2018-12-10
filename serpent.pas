@@ -15,7 +15,6 @@ uses crt,math,rank;
 //? 回复：因为这些var都是在主程序中定义的，而那些procedure也只是在主程序中调用的，所以这类var
 //?      就类同全局变量了
 //todo:type of beans
-//todo:point
 //todo:create a file to store the score
 //1 pomme : fait gagner 1 points et fait gagner en taille le serpent.
 //2 bombe : fait perdre une vie, disparaît après 10 secondes.
@@ -278,7 +277,7 @@ begin
         write(r.name[i],' ',r.score[i]);
         writeln();
     end;
-end. 
+end; 
 
 
 
@@ -320,8 +319,8 @@ procedure snakeGrow(x,y,tmp:Integer;var score:Integer);
         (none)
 *)
 begin
-    if (beans[tmp,1]=4) then  inc(score,10); // i.e. score = score + 10
-    if (beans[tmp,1]=4) then  inc(score,1);
+    if (beans[tmp,3]=4) then  inc(score,10); // i.e. score = score + 10
+    if (beans[tmp,3]=1) then  inc(score,1);
 	inc(len,1);
     inc(d,-10);
 	body[len,1] := x;
@@ -332,6 +331,32 @@ begin
 	textColor(white);
 	write(' Point: ',score);
 	textColor(lightred);
+end;
+
+
+//todo
+procedure shadow;
+
+begin
+    inc(d,-100);
+end;
+
+//todo
+procedure diamond(x,y,tmp,score);
+
+var i,j:integer;
+begin
+    textcolor(green);
+    for i:=2 to 79 do 
+        for j:=4 to 22 do 
+            if (snakeContain(i,j)=False) then 
+                begin
+                GotoXY(i,j);
+                writeln('*');
+                end;
+    repeat
+        snakeGrow(x,y,tmp,score);
+    until
 end;
 
 
@@ -347,11 +372,9 @@ begin
     case beans[ind,3] of
         1: begin snakeGrow(x,y,ind,score); end; // normal bean
         2: begin snakeDeath; end; // bomb
-        3: begin //todo           
-           end; // shadow
+        3: begin end; // shadow
         4: begin snakeGrow(x,y,ind,score);  end; // fraise
-        5: begin //todo
-           end;// diamond
+        5: begin diamond; end;// diamond
     end;
 end;
 
@@ -375,24 +398,25 @@ begin
         until not snakeContain(x,y);
         beans[ind,1] := x;
         beans[ind,2] := y;
-        r := random(40)+1;
+        r := random(30)+1;
         Case r Of 
-            37:   randomfood := 2;
-            38:   randomfood := 3;
-            39:   randomfood := 4;
-            40:   randomfood := 5;
+            27:   randomfood := 2;
+            28:   randomfood := 3;
+            29:   randomfood := 4;
+            30:   randomfood := 5;
         Else
-            randomfood := 1;
+            randomfood := 5;
         end;        
         beans[ind,3] := randomfood; //TODO beans in the wall
+        beans[ind,4] := 0;
         // draw different beans on screen
         GotoXY(x,y);
         case beans[ind,3] of
             1: begin textColor(green); write('*'); end; // normal bean
             2: begin textColor(black); write('X'); end; // bomb
-            3: begin textColor(cyan); write('<'); end; // shadow
-            4: begin textColor(magenta); write('>'); end; // fraise
-            5: begin textColor(black); write('X'); end;// diamond
+            3: begin textColor(blue); write('*'); end; // shadow
+            4: begin textColor(red); write('*'); end; // fraise
+            5: begin textColor(lightcyan); write('*'); end;// diamond
         end;
         textColor(lightred); // reset color to red
     end;
@@ -425,17 +449,46 @@ begin
             randomfood := 1;
         end;        
         beans[ind,3] := randomfood; 
+        beans[ind,4] := 0;
         GotoXY(x,y);
         case beans[ind,3] of
             1: begin textColor(green); write('*'); end; // normal bean
             2: begin textColor(black); write('X'); end; // bomb
-            3: begin textColor(cyan); write('<'); end; // shadow
-            4: begin textColor(magenta); write('>'); end; // fraise
-            5: begin textColor(black); write('X'); end;// diamond
+            3: begin textColor(blue); write('*'); end; // shadow
+            4: begin textColor(red); write('*'); end; // fraise
+            5: begin textColor(lightcyan); write('*'); end;// diamond
 	    end;
 	    textColor(lightred);
     end;
 end;
+
+
+(*procedure disappearBean(amount,d:Integer);
+
+var ind:integer;
+begin
+    for ind:=1 to 5 do 
+    begin 
+        beans[ind,4]:= beans[ind,4]+d;
+        if (beans[ind,3]=2) and (beans[ind,4]>5000) then
+        begin
+            gotoxy(beans[ind,1],beans[ind,2]);
+            writeln('');				
+        end;
+        if (beans[ind,3]=4) and (beans[ind,4]>5000) then
+        begin
+            for i:=2 to 79 do 
+                for j:=4 to 23 do 
+                    begin
+                        if (snakeContain(i,j)=False) then 
+                            writeln('');
+                    end;    
+            initiateBean(amount);
+        end;
+    end;
+end;
+*)
+
 
 //* Control snake to move
 procedure movesnake;
@@ -594,6 +647,7 @@ begin
         // ***** Start Game *****
         repeat
             delay(d);
+            //disappearBean(beans_amount,d);
             if (keypressed) then
             begin
                 k:=readkey;
@@ -611,8 +665,7 @@ begin
                     if (dir = 3) and (dirnew <> 1) then dir := dirnew;
                     if (dir = 4) and (dirnew <> 2) then dir := dirnew;
                 end;
-                if (k = #27) then 
-//?what is #27
+                if (k = #27) then //?what is #27
                 begin
                     snakeDeath;
                     creatFile;
