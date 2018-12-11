@@ -11,11 +11,8 @@ Superviseur: Jean-Baptiste LOUVET
 program serpent;
 uses crt,math,rank;
 
-//? 问题：为什么很多procedure里的variable没有写成entree就可以引用？
-//? 回复：因为这些var都是在主程序中定义的，而那些procedure也只是在主程序中调用的，所以这类var
-//?      就类同全局变量了
-//todo:type of beans
-//todo:create a file to store the score
+//todo:蛇撞自己不会死
+//todo:待处理的bug:创建文件存分数
 //1 pomme : fait gagner 1 points et fait gagner en taille le serpent.
 //2 bombe : fait perdre une vie, disparaît après 10 secondes.
 //3 shadow: speed increases for 5 seconds.
@@ -36,9 +33,8 @@ var i,j,len,dir,dirnew,beans_amount:Integer;
     hWalls:array of array of Integer; // coordinates of horizontal wall
     vWalls:array of array of Integer; // coordinates of vertical wall
 	diff,start:String;
-    d:SmallInt;
 	k:Char;
-	score:Integer;
+	score,d:Integer;
     f:file of ranking;
 	r:ranking;
 
@@ -286,6 +282,7 @@ procedure creatFile;
 
 var i:integer;
 begin	
+    ClrScr;
     assign(f,'store.txt');
 	Reset(f);
 	while not eof(f) do
@@ -329,54 +326,19 @@ begin
 	write('x');
 	GotoXY(2,2); // move cursor back to score panel
 	textColor(white);
+    textColor(lightred);
 	write(' Point: ',score);
-	textColor(lightred);
 end;
 
 
-//todo
+//todo: after 10 seconds, the speed+100
 procedure shadow;
 
 begin
     inc(d,-100);
 end;
 
-//todo
-procedure diamond(x,y,tmp,score);
 
-var i,j:integer;
-begin
-    textcolor(green);
-    for i:=2 to 79 do 
-        for j:=4 to 22 do 
-            if (snakeContain(i,j)=False) then 
-                begin
-                GotoXY(i,j);
-                writeln('*');
-                end;
-    repeat
-        snakeGrow(x,y,tmp,score);
-    until
-end;
-
-
-procedure checkSnakeStatus(x,y,ind:integer;var socre:integer);
-(*  Find out which kind of bean that has been eaten by snake
-    INPUT
-        x: X coordinate [int]
-        y: Y coordinate [int]
-        ind: index of bean [int]
-    OUTPUT
-*)
-begin
-    case beans[ind,3] of
-        1: begin snakeGrow(x,y,ind,score); end; // normal bean
-        2: begin snakeDeath; end; // bomb
-        3: begin end; // shadow
-        4: begin snakeGrow(x,y,ind,score);  end; // fraise
-        5: begin diamond; end;// diamond
-    end;
-end;
 
 
 procedure initiateBean(amount:integer);
@@ -405,9 +367,9 @@ begin
             29:   randomfood := 4;
             30:   randomfood := 5;
         Else
-            randomfood := 5;
+            randomfood := 1;
         end;        
-        beans[ind,3] := randomfood; //TODO beans in the wall
+        beans[ind,3] := randomfood; 
         beans[ind,4] := 0;
         // draw different beans on screen
         GotoXY(x,y);
@@ -419,6 +381,41 @@ begin
             5: begin textColor(lightcyan); write('*'); end;// diamond
         end;
         textColor(lightred); // reset color to red
+    end;
+end;
+
+
+//todo:after 10 seconds, the beans disappear and reinitialize beans
+procedure diamond(x,y,tmp,score,d:integer);
+
+var i,j:integer;
+begin
+    textcolor(green);
+    for i:=2 to 79 do 
+        for j:=4 to 22 do 
+            if (snakeContain(i,j)=False) then 
+                begin
+                GotoXY(i,j);
+                writeln('*');
+                end;
+end;
+
+
+procedure checkSnakeStatus(x,y,ind,d:integer;var socre:integer);
+(*  Find out which kind of bean that has been eaten by snake
+    INPUT
+        x: X coordinate [int]
+        y: Y coordinate [int]
+        ind: index of bean [int]
+    OUTPUT
+*)
+begin
+    case beans[ind,3] of
+        1: begin snakeGrow(x,y,ind,score); end; // normal bean
+        2: begin snakeDeath; end; // bomb
+        3: begin end; // shadow
+        4: begin snakeGrow(x,y,ind,score);  end; // fraise
+        5: begin diamond(x,y,ind,score,d); end;// diamond
     end;
 end;
 
@@ -441,10 +438,10 @@ begin
 	begin
         r := random(40)+1;
         Case r Of 
-            37:   randomfood := 2;
-            38:   randomfood := 3;
-            39:   randomfood := 4;
-            40:   randomfood := 5;
+            27:   randomfood := 2;
+            28:   randomfood := 3;
+            29:   randomfood := 4;
+            30:   randomfood := 5;
         Else
             randomfood := 1;
         end;        
@@ -462,32 +459,23 @@ begin
     end;
 end;
 
-
-(*procedure disappearBean(amount,d:Integer);
-
+//todo: finish it
+procedure disappearBean(amount,d:Integer);
+(* bomb disappear after 10 seconds
+*)
 var ind:integer;
 begin
-    for ind:=1 to 5 do 
+    for ind:=1 to amount do 
     begin 
         beans[ind,4]:= beans[ind,4]+d;
-        if (beans[ind,3]=2) and (beans[ind,4]>5000) then
+        if (beans[ind,3]=2) and (beans[ind,4]>10000) then
         begin
-            gotoxy(beans[ind,1],beans[ind,2]);
-            writeln('');				
-        end;
-        if (beans[ind,3]=4) and (beans[ind,4]>5000) then
-        begin
-            for i:=2 to 79 do 
-                for j:=4 to 23 do 
-                    begin
-                        if (snakeContain(i,j)=False) then 
-                            writeln('');
-                    end;    
-            initiateBean(amount);
+            GotoXY(beans[ind,1],beans[ind,2]);
+            write('');			
         end;
     end;
 end;
-*)
+
 
 
 //* Control snake to move
@@ -533,7 +521,7 @@ begin
     begin
         if (snakeContain(beans[tmp,1],beans[tmp,2])) then // a bean is eaten
         begin
-            checkSnakeStatus(wasx, wasy, tmp,score);
+            checkSnakeStatus(wasx, wasy, tmp,score,d);
             // snakeGrow(wasx,wasy,tmp,score);
             refreshBean(tmp);
             break;
@@ -647,7 +635,6 @@ begin
         // ***** Start Game *****
         repeat
             delay(d);
-            //disappearBean(beans_amount,d);
             if (keypressed) then
             begin
                 k:=readkey;
@@ -671,6 +658,7 @@ begin
                     creatFile;
                 end;
             end;
+            //todo: disappearBean(beans_amount,d);
             movesnake;
             GotoXY(2,2);
         until false;
