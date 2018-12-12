@@ -41,7 +41,7 @@ var i,j,len,dir,dirnew,beans_amount:Integer;
     vWalls:array of array of Integer; // coordinates of vertical wall
 	diff,start:String;
 	k:Char;
-	score,d:Integer;
+	score,speed:Integer;
     f:file of ranking;
 	r:ranking;
 
@@ -314,41 +314,7 @@ begin
 	close(f);
 end;
 
-//* after snake eating a normal bean
-procedure snakeGrow(x,y,tmp:Integer;var score:Integer);
-(*  Increase the length of snake if it eats a bean
-    INPUT
-        x: X coordinate [int]
-        y: Y coordinate [int]
-    OUTPUT
-        (none)
-*)
-begin
-    if (beans[tmp,3]=4) then  inc(score,10); // i.e. score = score + 10
-    if (beans[tmp,3]=1) then  inc(score,1);
-	inc(len,1);
-    inc(d,-10);
-	body[len,1] := x;
-	body[len,2] := y;
-	GotoXY(x,y);
-	write('x');
-	GotoXY(2,2); // move cursor back to score panel
-	textColor(white);
-    textColor(lightred);
-	write(' Point: ',score);
-end;
-
-
-//todo: after 10 seconds, the speed+100
-procedure shadow;
-
-begin
-    inc(d,-100);
-end;
-
-
-
-
+//* vvvvvvvvvvvvvvvvvvvvvvvvv Beans and Effects vvvvvvvvvvvvvvvvvvvvvvvvv
 procedure initiateBean(amount:integer);
 (*  Initiate beans at the begining of game
     INPUT
@@ -393,41 +359,6 @@ begin
     end;
 end;
 
-
-//todo:after 10 seconds, the beans disappear and reinitialize beans
-procedure diamond(x,y,tmp,score,d:integer);
-
-var i,j:integer;
-begin
-    textcolor(green);
-    for i:=2 to 79 do 
-        for j:=4 to 22 do 
-            if (snakeContain(i,j)=False) then 
-                begin
-                GotoXY(i,j);
-                writeln('*');
-                end;
-end;
-
-
-procedure checkSnakeStatus(x,y,ind,d:integer;var socre:integer);
-(*  Find out which kind of bean that has been eaten by snake
-    INPUT
-        x: X coordinate [int]
-        y: Y coordinate [int]
-        ind: index of bean [int]
-    OUTPUT
-*)
-begin
-    case beans[ind,3] of
-        1: begin snakeGrow(x,y,ind,score); end; // normal bean
-        2: begin snakeDeath; end; // bomb
-        3: begin end; // shadow
-        4: begin snakeGrow(x,y,ind,score);  end; // fraise
-        5: begin diamond(x,y,ind,score,d); end;// diamond
-    end;
-end;
-
 procedure refreshBean(ind:Integer);
 (*  Refresh a new bean after eating
     INPUT
@@ -453,7 +384,7 @@ begin
             30:   randomfood := 5;
         Else
             randomfood := 1;
-        end;        
+        end; 
         beans[ind,3] := randomfood; 
         beans[ind,4] := 0;
         GotoXY(x,y);
@@ -468,15 +399,67 @@ begin
     end;
 end;
 
+//* #1 when snake eats a normal bean
+procedure snakeGrow(x,y,tmp:Integer;var score:Integer);
+(*  Increase the length of snake if it eats a bean
+    INPUT
+        x: X coordinate [int]
+        y: Y coordinate [int]
+    OUTPUT
+        (none)
+*)
+begin
+    if (beans[tmp,3]=4) then  inc(score,10); // i.e. score = score + 10
+    if (beans[tmp,3]=1) then  inc(score,1);
+	inc(len,1);
+    // inc(speed,-10); //? unused
+	body[len,1] := x;
+	body[len,2] := y;
+	GotoXY(x,y);
+	write('x');
+	GotoXY(2,2); // move cursor back to score panel
+	textColor(white);
+    textColor(lightred);
+	write(' Point: ',score);
+end;
+
+
+//TODO #2 when snake eats a bomb
+
+//TODO #3 when snake eats a speed-up bean
+procedure shadow;
+
+begin
+    inc(speed,-100);
+end;
+
+//TODO #4 when snake eats a strawberry
+
+//TODO #5 when snake eats a diamond
+//TODO #5 after 10 seconds, the beans disappear and reinitialize beans
+procedure diamond(x,y,tmp,score,speed:integer);
+
+var i,j:integer;
+begin
+    textcolor(green);
+    for i:=2 to 79 do 
+        for j:=4 to 22 do 
+            if (snakeContain(i,j)=False) then 
+                begin
+                GotoXY(i,j);
+                writeln('*');
+                end;
+end;
+
 //todo: finish it
-procedure disappearBean(amount,d:Integer);
+procedure disappearBean(amount,speed:Integer);
 (* bomb disappear after 10 seconds
 *)
 var ind:integer;
 begin
     for ind:=1 to amount do 
     begin 
-        beans[ind,4]:= beans[ind,4]+d;
+        beans[ind,4]:= beans[ind,4]+speed;
         if (beans[ind,3]=2) and (beans[ind,4]>10000) then
         begin
             GotoXY(beans[ind,1],beans[ind,2]);
@@ -486,8 +469,26 @@ begin
 end;
 
 
+procedure checkSnakeStatus(x,y,ind,speed:integer;var socre:integer);
+(*  Find out which kind of bean that has been eaten by snake
+    INPUT
+        x: X coordinate [int]
+        y: Y coordinate [int]
+        ind: index of bean [int]
+    OUTPUT
+*)
+begin
+    case beans[ind,3] of
+        1: begin snakeGrow(x,y,ind,score); end; // normal bean
+        2: begin snakeDeath; end; // bomb
+        3: begin shadow; end; // shadow
+        4: begin snakeGrow(x,y,ind,score);  end; // fraise
+        5: begin diamond(x,y,ind,score,speed); end;// diamond
+    end;
+end;
 
-//* Control snake to move
+
+//* vvvvvvvvvvvvvvvvvvvvvvvvv Snake Movement Control vvvvvvvvvvvvvvvvvvvvvvvvv
 procedure movesnake;
 (*  Change the direction of moving
     INPUT
@@ -531,8 +532,7 @@ begin
     begin
         if (snakeContain(beans[tmp,1],beans[tmp,2])) then // a bean is eaten
         begin
-            checkSnakeStatus(wasx, wasy, tmp,score,d);
-            // snakeGrow(wasx,wasy,tmp,score);
+            checkSnakeStatus(wasx, wasy, tmp, score, speed);
             refreshBean(tmp);
             break;
         end;
@@ -557,6 +557,7 @@ begin
     end;
 end;
 
+//* vvvvvvvvvvvvvvvvvvvvvvvvv Welcome Window vvvvvvvvvvvvvvvvvvvvvvvvv
 procedure intros;
 begin
 	gotoxy(24,4);
@@ -588,6 +589,7 @@ begin
 end;
 
 
+
 //! ----------------------------------------------------------------------------
 //!                                  MAIN PROGRAM
 //! ----------------------------------------------------------------------------
@@ -596,7 +598,7 @@ begin
 	ClrScr;
 	Randomize;
 	len := 3; // initial length of snake
-	d := 400; // time to delay
+	speed := 400; // time to delay
     beans_amount := 5; // initial amount of beans
     wall_number := 4;
     wall_length := 3;
@@ -645,7 +647,7 @@ begin
         end;
         // ***** Start Game *****
         repeat
-            delay(d);
+            delay(speed);
             if (keypressed) then
             begin
                 k:=readkey;
