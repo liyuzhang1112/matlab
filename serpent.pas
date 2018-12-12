@@ -9,7 +9,7 @@ Superviseur: Jean-Baptiste LOUVET
 *******************************************************************************)
 
 program serpent;
-uses crt,math,rank;
+uses crt, sysutils, math, rank;
 
 //! 【规！定！】
 //! 有错误就一个一个改，发现bug，先解决掉，然后再添加新功能。
@@ -22,9 +22,10 @@ uses crt,math,rank;
 //todo:待处理的bug:创建文件存分数
 //1 pomme : fait gagner 1 points et fait gagner en taille le serpent.
 //2 bombe : fait perdre une vie, disparaît après 10 secondes.
-//3 shadow: speed increases for 5 seconds.
+//3 snakeSpeedUp: speed increases for 5 seconds.
 //4 fraise : fait gagner 10 points, disparaît après 5 secondes
 //5 diamant : écran rempli de pommes, disparaît après 5 secondes
+
 
 
 //! ----------------------------------------------------------------------------
@@ -35,7 +36,9 @@ var i,j,len,dir,dirnew,beans_amount:Integer;
     wall_number,wall_length,wall_amount:Integer;
     //整个蛇是由一个2维数组来表示的，这个数组记载了蛇每一截所在的坐标（x,y）。行数代表蛇的长度
     //第一行是蛇头。第一列是横坐标x，第二列是纵坐标y——如果我没记错的话
-	body:array[1..255,1..2] of Integer; // coordinates of snake
+	body:array[1..255, 1..2] of Integer; // coordinates of snake
+    buff_history:array[0..254] of TDateTime; // snake buff: duration
+    buff_effect:array[0..254] of Integer; // snake buff: effect
     beans:array of array of Integer; // coordinates of bean
     hWalls:array of array of Integer; // coordinates of horizontal wall
     vWalls:array of array of Integer; // coordinates of vertical wall
@@ -204,7 +207,7 @@ begin
 end;
 
 //* Game over pop-up window
-procedure snakeDeath;
+procedure snakeDie;
 (*  INPUT
         (none)
     OUTPUT
@@ -324,8 +327,7 @@ procedure initiateBean(amount:integer);
 *)
 var x,y,ind,r,randomfood:integer;
 begin
-    setLength(beans, amount, 3);//? 这是啥
-                                //* 回复：给beans数组定维（amout行，3列）
+    setLength(beans, amount, 4);
     for ind := 0 to amount-1 do
     begin
         // find a random position for new bean
@@ -351,7 +353,7 @@ begin
         case beans[ind,3] of
             1: begin textColor(green); write('*'); end; // normal bean
             2: begin textColor(black); write('X'); end; // bomb
-            3: begin textColor(blue); write('*'); end; // shadow
+            3: begin textColor(blue); write('*'); end; // snakeSpeedUp
             4: begin textColor(red); write('*'); end; // fraise
             5: begin textColor(lightcyan); write('*'); end;// diamond
         end;
@@ -378,12 +380,12 @@ begin
 	begin
         r := random(40)+1;
         Case r Of 
-            27:   randomfood := 2;
-            28:   randomfood := 3;
-            29:   randomfood := 4;
-            30:   randomfood := 5;
+            27:   randomfood := 2; // bomb
+            28:   randomfood := 3; // speed-up
+            29:   randomfood := 4; // strewberry
+            30:   randomfood := 5; // diamond
         Else
-            randomfood := 1;
+            randomfood := 1; // normal bean
         end; 
         beans[ind,3] := randomfood; 
         beans[ind,4] := 0;
@@ -391,16 +393,16 @@ begin
         case beans[ind,3] of
             1: begin textColor(green); write('*'); end; // normal bean
             2: begin textColor(black); write('X'); end; // bomb
-            3: begin textColor(blue); write('*'); end; // shadow
-            4: begin textColor(red); write('*'); end; // fraise
-            5: begin textColor(lightcyan); write('*'); end;// diamond
+            3: begin textColor(blue); write('*'); end; // speed-up
+            4: begin textColor(red); write('*'); end; // strewberry
+            5: begin textColor(lightcyan); write('*'); end; // diamond
 	    end;
 	    textColor(lightred);
     end;
 end;
 
 //* #1 when snake eats a normal bean
-procedure snakeGrow(x,y,tmp:Integer;var score:Integer);
+procedure snakeGrow(x,y,tmp:Integer);
 (*  Increase the length of snake if it eats a bean
     INPUT
         x: X coordinate [int]
@@ -427,17 +429,27 @@ end;
 //TODO #2 when snake eats a bomb
 
 //TODO #3 when snake eats a speed-up bean
-procedure shadow;
-
+procedure snakeSpeedUp;
+var endtime: TDateTime;
 begin
-    inc(speed,-100);
+    inc(speed, -100);
+    endtime := Time + EnCodeTime(0,0,10,0); // 10s HH, MM, SS, MS
+    for i := 0 to 254 do // find an unused position to save buff
+    begin
+        if (buff_history[i] = 0) then
+        begin
+            buff_history[i] := endtime;
+            buff_effect[i] := 100;
+            Break;
+        end;
+    end;
 end;
 
 //TODO #4 when snake eats a strawberry
 
 //TODO #5 when snake eats a diamond
 //TODO #5 after 10 seconds, the beans disappear and reinitialize beans
-procedure diamond(x,y,tmp,score,speed:integer);
+procedure diamond(x,y,tmp:integer);
 
 var i,j:integer;
 begin
@@ -469,7 +481,7 @@ begin
 end;
 
 
-procedure checkSnakeStatus(x,y,ind,speed:integer;var socre:integer);
+procedure checkSnakeStatus(x,y,ind:integer);
 (*  Find out which kind of bean that has been eaten by snake
     INPUT
         x: X coordinate [int]
@@ -479,16 +491,48 @@ procedure checkSnakeStatus(x,y,ind,speed:integer;var socre:integer);
 *)
 begin
     case beans[ind,3] of
-        1: begin snakeGrow(x,y,ind,score); end; // normal bean
-        2: begin snakeDeath; end; // bomb
-        3: begin shadow; end; // shadow
-        4: begin snakeGrow(x,y,ind,score);  end; // fraise
-        5: begin diamond(x,y,ind,score,speed); end;// diamond
+        1: begin snakeGrow; end; // normal bean
+        2: begin snakeDie; end; // bomb
+        3: begin snakeSpeedUp; end; // speed-up
+        4: begin snakeGrow; end; // strawberry
+        5: begin diamond; end;// diamond
     end;
 end;
 
 
 //* vvvvvvvvvvvvvvvvvvvvvvvvv Snake Movement Control vvvvvvvvvvvvvvvvvvvvvvvvv
+procedure checkTime;
+(*  Check if buff is time's up
+    INPUT
+        (none)
+    OUTPUT
+        (none)
+*)
+var now:TDateTime;
+begin
+    GotoXY(45,2);
+    Write(' Speed ', speed);
+    now := Time;
+    if (buff_history[0] <> 0) and (now >= buff_history[0]) then
+    begin
+        Inc(speed, buff_effect[0]);
+        for i := 1 to 254 do
+        begin
+            buff_history[i-1] := buff_history[i];
+            buff_effect[i-1] := buff_effect[i];
+        end;
+    end;
+
+    GotoXY(2,2);
+    Write(' hist ', buff_history[0]);
+    GotoXY(2,3);
+    Write(' effect ', buff_effect[0]);
+    GotoXY(2,4);
+    Write(' hist ', buff_history[1]);
+    GotoXY(2,5);
+    Write(' effect ', buff_effect[1]);
+end;
+
 procedure movesnake;
 (*  Change the direction of moving
     INPUT
@@ -498,6 +542,8 @@ procedure movesnake;
 *)
 var x,y,wasx,wasy,tmp:integer;
 begin
+    // ***** Checking buff *****
+    checkTime;
     // get direction from main program
 	case dir of
 		1: begin x :=  1; y := 0; end; // right (i.e. east)
@@ -514,7 +560,7 @@ begin
     // check if snake meets itself
 	if (snakeContain(body[1,1]+x, body[1,2]+y)) then
         begin
-            snakeDeath;
+            snakeDie;
             creatFile;
         end;
     // change segment of snake: from previous position to next position
@@ -532,7 +578,7 @@ begin
     begin
         if (snakeContain(beans[tmp,1],beans[tmp,2])) then // a bean is eaten
         begin
-            checkSnakeStatus(wasx, wasy, tmp, score, speed);
+            checkSnakeStatus(wasx, wasy, tmp);
             refreshBean(tmp);
             break;
         end;
@@ -545,14 +591,14 @@ begin
             if (snakeContain(hWalls[tmp,1],hWalls[tmp,2])) or
                (snakeContain(vWalls[tmp,1],vWalls[tmp,2])) then // snake meets wall
             begin
-                snakeDeath;
+                snakeDie;
                 creatFile;
             end;
         end;
     end;
 	if (snakeCollision) then 
     begin
-        snakeDeath; // meets perimeters
+        snakeDie; // meets perimeters
         creatFile;
     end;
 end;
@@ -599,7 +645,7 @@ begin
 	Randomize;
 	len := 3; // initial length of snake
 	speed := 400; // time to delay
-    beans_amount := 5; // initial amount of beans
+    beans_amount := 10; // initial amount of beans
     wall_number := 4;
     wall_length := 3;
     wall_amount := wall_number * wall_length;
@@ -617,6 +663,10 @@ begin
     body[2,2] := 12;
     body[3,1] := 10;
     body[3,2] := 12;
+    // initiate buff
+    for i:=0 to 254 do
+        buff_history[i] := 0;
+        buff_effect[i] := 0;
 	// print perimeter on screen
     textcolor(lightblue);
 	drawbox(1,1,space_width,space_height,'');
@@ -669,7 +719,7 @@ begin
                                   //* 回复：27是Pascal中ESC键的ASCII编号，参考：http://wiki.freepascal.org/ASCII
                                   //* 你们自己Google搜一下就有解释了好吗
                 begin
-                    snakeDeath;
+                    snakeDie;
                     creatFile;
                 end;
             end;
