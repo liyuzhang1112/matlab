@@ -11,7 +11,14 @@ Superviseur: Jean-Baptiste LOUVET
 program serpent;
 uses crt,math,rank;
 
-//todo:蛇撞自己不会死
+//! 【规！定！】
+//! 有错误就一个一个改，发现bug，先解决掉，然后再添加新功能。
+//! 不要一股脑加一堆新东西上去，然后都有问题，没一个达到预期 能用的。 
+//! 使用Git的一个好处，就是让你可以一步一步跟踪进展，“屁胡走向胜利”。一下子加这么多，而且
+//! 上一个都还有bug没有解决掉的，就加新的东西 而且新的里面也还有bug，这会让人很难去跟踪每个问
+//! 题的错误，解决每个问题对应的bug。
+
+//todo:蛇撞自己不会死 => Done !
 //todo:待处理的bug:创建文件存分数
 //1 pomme : fait gagner 1 points et fait gagner en taille le serpent.
 //2 bombe : fait perdre une vie, disparaît après 10 secondes.
@@ -71,9 +78,11 @@ begin
 	snakeContain := false;
 	for i := 1 to len do
 	begin
-		if (body[i,1] = x) and (body[i,2] = y) then
+        if (body[i,1] = x) and (body[i,2] = y) then
+        begin
             snakeContain := true;
             break;
+        end
 	end;
 end;
 
@@ -201,7 +210,6 @@ procedure snakeDeath;
     OUTPUT
         (none)
 *)
-
 begin
 	textColor(lightblue);
 	drawbox(1,11,80,3,'');
@@ -351,6 +359,7 @@ procedure initiateBean(amount:integer);
 var x,y,ind,r,randomfood:integer;
 begin
     setLength(beans, amount, 3);//? 这是啥
+                                //* 回复：给beans数组定维（amout行，3列）
     for ind := 0 to amount-1 do
     begin
         // find a random position for new bean
@@ -499,9 +508,10 @@ begin
 	GotoXY(body[1,1], body[1,2]); write('x'); // change snake head to body
 	GotoXY(body[len,1], body[len,2]); write(' '); // change snake tail to empty
 	wasx := body[len,1];//? position of tail ???
+                        //* 回复：是的
 	wasy := body[len,2];
     // check if snake meets itself
-	if (snakeContain(body[1,1] + x, body[1,2] + y)) then
+	if (snakeContain(body[1,1]+x, body[1,2]+y)) then
         begin
             snakeDeath;
             creatFile;
@@ -532,7 +542,8 @@ begin
     begin
         for tmp := 0 to wall_amount-1 do
         begin
-            if (snakeContain(hWalls[tmp,1],hWalls[tmp,2])) or (snakeContain(vWalls[tmp,1],vWalls[tmp,2])) then // snake meets wall
+            if (snakeContain(hWalls[tmp,1],hWalls[tmp,2])) or
+               (snakeContain(vWalls[tmp,1],vWalls[tmp,2])) then // snake meets wall
             begin
                 snakeDeath;
                 creatFile;
@@ -598,11 +609,11 @@ begin
 	for i:=1 to 255 do
 		for j:=1 to 2 do
 			body[i,j] := 0; // initial position of snake body and head
-    body[1,1] := 6;
+    body[1,1] := 12;
     body[1,2] := 12;
-    body[2,1] := 5;
+    body[2,1] := 11;
     body[2,2] := 12;
-    body[3,1] := 4;
+    body[3,1] := 10;
     body[3,2] := 12;
 	// print perimeter on screen
     textcolor(lightblue);
@@ -653,6 +664,8 @@ begin
                     if (dir = 4) and (dirnew <> 2) then dir := dirnew;
                 end;
                 if (k = #27) then //?what is #27
+                                  //* 回复：27是Pascal中ESC键的ASCII编号，参考：http://wiki.freepascal.org/ASCII
+                                  //* 你们自己Google搜一下就有解释了好吗
                 begin
                     snakeDeath;
                     creatFile;
