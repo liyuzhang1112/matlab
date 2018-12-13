@@ -20,10 +20,10 @@ uses crt, sysutils, math, rank;
 
 //todo:蛇撞自己不会死 => Done !
 //todo:待处理的bug:创建文件存分数
-//1 pomme : fait gagner 1 points et fait gagner en taille le serpent.
-//2 bombe : fait perdre une vie, disparaît après 10 secondes.
+//1 pomme : fait gagner 1 points et fait gagner en taille le serpent. => Done !
+//2 bombe : fait perdre une vie, disparaît après 10 secondes. => Done !
 //3 snakeSpeedUp: speed increases for 5 seconds. => Done !
-//4 strewberry : fait gagner 10 points, disparaît après 5 secondes
+//4 strewberry : fait gagner 10 points, disparaît après 5 secondes => Done !
 //5 diamant : écran rempli de pommes, disparaît après 5 secondes
 
 
@@ -217,25 +217,6 @@ begin
 	end;
 end;
 
-//* Game over pop-up window
-procedure snakeDie;
-(*  INPUT
-        (none)
-    OUTPUT
-        (none)
-*)
-begin
-	textColor(lightblue);
-	drawbox(1,11,80,3,'');
-	gotoXY(37,12);
-	textColor(lightred);
-	write('Game Over');
-	textColor(lightgray);
-	gotoXY(20,20);
-	delay(1000);
-end;
-
-
 //*reorder the rank
 procedure refreshRank(ind:integer);
 (*  INPUT
@@ -329,28 +310,25 @@ begin
 end;
 
 //* vvvvvvvvvvvvvvvvvvvvvvvvv Beans and Effects vvvvvvvvvvvvvvvvvvvvvvvvv
-procedure initiateBean(amount:integer);
-(*  Initiate beans at the begining of game
+procedure generateBean(ind:Integer);
+(*  Generate a new bean after eating or disappearing
     INPUT
-        amount: initial number of beans [int]
+        (none)
     OUTPUT
         (none)
 *)
-var x,y,ind,r:integer;
+var x,y,r:integer;
 begin
-    setLength(beans, amount, 4);
-    for ind := 0 to amount-1 do
-    begin
-        // find a random position for new bean
-        repeat
-            x := random(space_width-3)+2;
-            y := random(space_height-5)+4;
-        until not snakeContain(x,y);
-        beans[ind,0] := x;
-        beans[ind,1] := y;
-        r := random(30)+1;
-        Case r Of 
-            27:
+    repeat // random position for new bean
+        x := random(space_width-3)+2;
+        y := random(space_height-5)+4;
+    until not snakeContain(x,y);
+	beans[ind,0] := x;
+	beans[ind,1] := y;
+	gotoXY(x,y);
+    r := random(6)+1;
+    case r of 
+            2:
             begin
                 beans[ind,2] := 2; // bomb
                 beans[ind,3] := convertToInt(time+encodeTime(0,0,10,0));
@@ -358,7 +336,7 @@ begin
                 textColor(black);
                 write('X');
             end; 
-            28:
+            3:
             begin
                 beans[ind,2] := 3; // snakeSpeedUp
                 beans[ind,3] := 999999;
@@ -366,7 +344,7 @@ begin
                 textColor(blue);
                 write('*');
             end;   
-            29:
+            4:
             begin
                 beans[ind,2] := 4; // strewberry
                 beans[ind,3] := convertToInt(time+encodeTime(0,0,5,0));
@@ -374,7 +352,7 @@ begin
                 textColor(red);
                 write('*');
             end;
-            30:
+            5:
             begin
                 beans[ind,2] := 5; // diamond
                 beans[ind,3] := convertToInt(time+encodeTime(0,0,5,0));
@@ -382,56 +360,34 @@ begin
                 textColor(lightcyan);
                 write('*');
             end;
-        Else
+        else
             beans[ind,2] := 1; // normal bean
             beans[ind,3] := 999999;
             gotoXY(x,y);
             textColor(green);
             write('*');
         end;
-    end;
-    textColor(lightred); // reset color to red
-end;
-
-procedure refreshBean(ind:Integer);
-(*  Refresh a new bean after eating or disappearing
-    INPUT
-        (none)
-    OUTPUT
-        (none)
-*)
-var x,y,r,randomfood:integer;
-begin
-    repeat // random position for new bean
-        x := random(78)+1;
-        y := random(19)+4;
-    until not snakeContain(x,y);
-	beans[ind,0] := x;
-	beans[ind,1] := y;
-	gotoXY(x,y);
-    r := random(40)+1;
-    Case r Of 
-        27:   randomfood := 2; // bomb
-        28:   randomfood := 3; // speed-up
-        29:   randomfood := 4; // strewberry
-        30:   randomfood := 5; // diamond
-    Else
-        randomfood := 1; // normal bean
-    end; 
-    beans[ind,2] := randomfood; 
-    beans[ind,3] := 0;
-    gotoXY(x,y);
-    case beans[ind,2] of
-        1: begin textColor(green); write('*'); end; // normal bean
-        2: begin textColor(black); write('X'); end; // bomb
-        3: begin textColor(blue); write('*'); end; // speed-up
-        4: begin textColor(red); write('*'); end; // strewberry
-        5: begin textColor(lightcyan); write('*'); end; // diamond
-    end;
     textColor(lightred);
 end;
 
-//* #1 when snake eats a normal bean
+procedure initiateBean(amount:integer);
+(*  Initiate beans at the begining of game
+    INPUT
+        amount: initial number of beans [int]
+    OUTPUT
+        (none)
+*)
+var ind:integer;
+begin
+    setLength(beans, amount, 4);
+    for ind := 0 to amount-1 do
+    begin
+        generateBean(ind);
+    end;
+end;
+
+
+//* #1 normal bean
 procedure snakeGrow(x,y,tmp:Integer);
 (*  increase the length of snake if it eats a bean
     INPUT
@@ -452,14 +408,37 @@ begin
 	write(' Point: ',score);
 end;
 
+//* #2 bomb or Game Over
+procedure snakeDie;
+(*  When snake eats a bomb or the game is over or be manually closed
+    INPUT
+        (none)
+    OUTPUT
+        (none)
+*)
+begin
+	textColor(lightblue);
+	drawbox(1,11,80,3,'');
+	gotoXY(37,12);
+	textColor(lightred);
+	write('Game Over');
+	textColor(lightgray);
+	gotoXY(20,20);
+	delay(1000);
+    creatFile;
+end;
 
-//TODO #2 when snake eats a bomb
-
-//TODO #3 when snake eats a speed-up bean
+//* #3 speed-up bean
 procedure snakeSpeedUp;
+(*  When snake eats a speed-up bean
+    INPUT
+        (none)
+    OUTPUT
+        (none)
+*)
 var endtime: LongInt;
 begin
-    inc(speed, -100);
+    if (speed <> 0) then inc(speed, -100);
     endtime := convertToInt(time+encodeTime(0,0,10,0)); // i.e. last 10s
     for i := 0 to 254 do // find an unused position to save buff
     begin
@@ -472,18 +451,23 @@ begin
     end;
 end;
 
-//TODO #4 when snake eats a strawberry
+//* #4 strewberry
 procedure snakeBoostScore;
+(*  When snake eats a strawberry
+    INPUT
+        (none)
+    OUTPUT
+        (none)
+*)
 begin
     inc(score, 10);
     gotoXY(2,2);
+    textColor(lightred)
     write(' Point: ',score);
 end;
 
-
-//TODO #5 when snake eats a diamond
-//TODO #5 after 10 seconds, the beans disappear and reinitialize beans
-procedure diamond(x,y,tmp:integer);
+//TODO #5 diamond
+procedure snakeBoostBean;
 
 var i,j:integer;
 begin
@@ -497,22 +481,7 @@ begin
                 end;
 end;
 
-//todo: finish it
-procedure disappearBean(amount,speed:Integer);
-(* bomb disappear after 10 seconds
-*)
-var ind:integer;
-begin
-    for ind:=1 to amount do 
-    begin 
-        beans[ind,3]:= beans[ind,3]+speed;
-        if (beans[ind,2]=2) and (beans[ind,3]>10000) then
-        begin
-            gotoXY(beans[ind,0],beans[ind,1]);
-            write('');			
-        end;
-    end;
-end;
+
 
 
 procedure checkSnakeStatus(x,y,ind:integer);
@@ -525,11 +494,11 @@ procedure checkSnakeStatus(x,y,ind:integer);
 *)
 begin
     case beans[ind,2] of
-        1: begin snakeGrow(x,y,ind); end; // normal bean snakeGrow(x,y,ind);
-        2: begin snakeDie; end; // bomb
-        3: begin snakeSpeedUp; end; // speed-up
-        4: begin snakeBoostScore; end; // strawberry
-        5: begin diamond(x,y,ind); end;// diamond
+        1: begin snakeGrow(x,y,ind); end; // #1 normal bean snakeGrow(x,y,ind);
+        2: begin snakeDie; end; // #2 bomb
+        3: begin snakeSpeedUp; end; // #3 speed-up
+        4: begin snakeBoostScore; end; // #4 strawberry
+        5: begin snakeBoostBean; end;// #5 diamond
     end;
 end;
 
@@ -542,7 +511,7 @@ procedure checkTime;
     OUTPUT
         (none)
 *)
-var now:LongInt; //ind:Integer;
+var now:LongInt; ind:Integer;
 begin
     now := convertToInt(time);
     // check buff
@@ -557,13 +526,15 @@ begin
     end;
 
     // check beans
-    // for ind := 0 to beans_amount-1 do
-    // begin
-    //     if (now >= beans[ind,3]) then
-    //     begin
-    //         refreshBean(ind);
-    //     end;
-    // end;
+    for ind := 0 to beans_amount-1 do
+    begin
+        if (now >= beans[ind,3]) then
+        begin
+            gotoXY(beans[ind,0], beans[ind,1]);
+            write(' ');
+            generateBean(ind);
+        end;
+    end;
 
     //* JUST FOR DEBUGGING vvv
     gotoXY(30,2);
@@ -599,11 +570,7 @@ begin
 	wasx := body[len-1,0];
 	wasy := body[len-1,1];
     // check if snake meets itself
-	if (snakeContain(body[0,0]+x, body[0,1]+y)) then
-        begin
-            snakeDie;
-            creatFile;
-        end;
+	if (snakeContain(body[0,0]+x, body[0,1]+y)) then snakeDie;
     // change segment of snake: from previous position to next position
 	for tmp := 0 to len-2 do
 	begin
@@ -620,7 +587,7 @@ begin
         if (snakeContain(beans[tmp,0],beans[tmp,1])) then // a bean is eaten
         begin
             checkSnakeStatus(wasx, wasy, tmp);
-            refreshBean(tmp);
+            generateBean(tmp);
             break;
         end;
     end;
@@ -633,15 +600,10 @@ begin
                (snakeContain(vWalls[tmp,1],vWalls[tmp,2])) then // snake meets wall
             begin
                 snakeDie;
-                creatFile;
             end;
         end;
     end;
-	if (snakeCollision) then 
-    begin
-        snakeDie; // meets perimeters
-        creatFile;
-    end;
+	if (snakeCollision) then snakeDie; // meets perimeters
 end;
 
 //* vvvvvvvvvvvvvvvvvvvvvvvvv Welcome Window vvvvvvvvvvvvvvvvvvvvvvvvv
@@ -686,7 +648,7 @@ begin
 	Randomize;
 	len := 3; // initial length of snake
 	speed := 400; // time to delay
-    beans_amount := 10; // initial amount of beans
+    beans_amount := 15; // initial amount of beans
     wall_number := 4;
     wall_length := 3;
     wall_amount := wall_number * wall_length;
@@ -751,11 +713,7 @@ begin
                     if (dir = 3) and (dirnew <> 1) then dir := dirnew;
                     if (dir = 4) and (dirnew <> 2) then dir := dirnew;
                 end;
-                if (k = #27) then // press ESC key
-                begin
-                    snakeDie;
-                    creatFile;
-                end;
+                if (k = #27) then snakeDie; // press ESC key
             end;
             //todo: disappearBean(beans_amount,d);
             movesnake;
