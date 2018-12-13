@@ -36,7 +36,7 @@ var i,j,len,dir,dirnew,beans_amount:Integer;
     wall_number,wall_length,wall_amount:Integer;
     //整个蛇是由一个2维数组来表示的，这个数组记载了蛇每一截所在的坐标（x,y）。行数代表蛇的长度
     //第一行是蛇头。第一列是横坐标x，第二列是纵坐标y——如果我没记错的话
-	body:array[1..255, 1..2] of Integer; // coordinates of snake
+	body:array[0..254, 0..1] of Integer; // coordinates of snake
     buff:array[0..254, 0..1] of LongInt; // snake buff: effect
     beans:array of array of LongInt; // coordinates of bean
     hWalls:array of array of Integer; // coordinates of horizontal wall
@@ -61,9 +61,9 @@ function snakeCollision():boolean;
 *)
 begin
 	snakeCollision := false;
-    if (body[1,1] < 2) or (body[1,1] >= space_width) then
+    if (body[0,0] < 2) or (body[0,0] >= space_width) then
         snakeCollision := true;
-    if (body[1,2] < 4) or (body[1,2] >= space_height-1) then
+    if (body[0,1] < 4) or (body[0,1] >= space_height-1) then
         snakeCollision := true;
 end;
 
@@ -78,9 +78,9 @@ function snakeContain(x,y:integer):boolean;
 // var i:integer;
 begin
 	snakeContain := false;
-	for i := 1 to len do
+	for i := 0 to len-1 do
 	begin
-        if (body[i,1] = x) and (body[i,2] = y) then
+        if (body[i,0] = x) and (body[i,1] = y) then
         begin
             snakeContain := true;
             break;
@@ -209,10 +209,10 @@ procedure drawsnake;
 *)
 var tmp:integer;
 begin
-	for tmp:=1 to len do
+	for tmp := 0 to len-1 do
 	begin
-		gotoXY(body[tmp,1], body[tmp,2]);
-		if (tmp = 1) then write('o')
+		gotoXY(body[tmp,0], body[tmp,1]);
+		if (tmp = 0) then write('o')
 		else write('x');
 	end;
 end;
@@ -443,13 +443,11 @@ procedure snakeGrow(x,y,tmp:Integer);
 begin
     inc(score,1);
 	inc(len,1);
-    // inc(speed,-10); //? unused
-	body[len,1] := x;
-	body[len,2] := y;
+	body[len-1,0] := x;
+	body[len-1,1] := y;
 	gotoXY(x,y);
 	write('x');
 	gotoXY(2,2); // move cursor back to score panel
-	textColor(white);
     textColor(lightred);
 	write(' Point: ',score);
 end;
@@ -596,26 +594,26 @@ begin
 		4: begin x :=  0; y :=-1; end; // up (i.e. north)
 	end;
     // ***** Moving *****
-	gotoXY(body[1,1], body[1,2]); write('x'); // change snake head to body
-	gotoXY(body[len,1], body[len,2]); write(' '); // change snake tail to empty
-	wasx := body[len,1];
-	wasy := body[len,2];
+	gotoXY(body[0,0], body[0,1]); write('x'); // change snake head to body
+	gotoXY(body[len-1,0], body[len-1,1]); write(' '); // change snake tail to empty
+	wasx := body[len-1,0];
+	wasy := body[len-1,1];
     // check if snake meets itself
-	if (snakeContain(body[1,1]+x, body[1,2]+y)) then
+	if (snakeContain(body[0,0]+x, body[0,1]+y)) then
         begin
             snakeDie;
             creatFile;
         end;
     // change segment of snake: from previous position to next position
-	for tmp:=2 to len do
+	for tmp := 0 to len-2 do
 	begin
-		body[len-tmp+2,1] := body[len-tmp+1,1];
-		body[len-tmp+2,2] := body[len-tmp+1,2];
+		body[len-tmp-1,0] := body[len-tmp-2,0];
+		body[len-tmp-1,1] := body[len-tmp-2,1];
 	end;
     // change snake head: add new position
-	body[1,1] := body[1,1] + x;
-	body[1,2] := body[1,2] + y;
-	gotoXY(body[1,1], body[1,2]); write('o');
+	body[0,0] := body[0,0] + x;
+	body[0,1] := body[0,1] + y;
+	gotoXY(body[0,0], body[0,1]); write('o');
     // ***** Eating *****
     for tmp := 0 to beans_amount-1 do
     begin
@@ -697,32 +695,27 @@ begin
     space_width := 80; // width of gaming space
     space_height := 24; // height of gaming space
 	// initiate snake
-	for i:=1 to 255 do
-		for j:=1 to 2 do
-			body[i,j] := 0; // initial position of snake body and head
+	for i := 0 to 254 do
+        body[i,0] := 0;
+        body[i,1] := 0;
+    body[0,0] := 12;
+    body[0,1] := 12;
+    body[1,0] := 11;
     body[1,1] := 12;
-    body[1,2] := 12;
-    body[2,1] := 11;
-    body[2,2] := 12;
-    body[3,1] := 10;
-    body[3,2] := 12;
+    body[2,0] := 10;
+    body[2,1] := 12;
     // initiate buff
-    for i:=0 to 254 do
-        buff[i,0] := 0;
-        buff[i,1] := 0;
+    for j:=0 to 254 do
+        buff[j,0] := 0;
+        buff[j,1] := 0;
 	// print perimeter on screen
-    textColor(lightblue);
-	drawbox(1,1,space_width,space_height,'');
-	drawbox(1,1,space_width,3,'Jeu de Serpent (c) 2018');
+    // textColor(lightblue);
+	// drawbox(1,1,space_width,space_height,'');
+	// drawbox(1,1,space_width,3,'Jeu de Serpent (c) 2018');
 	intros;
 	if start = 'c' then
 	begin
-        // print initial snake on screen
         ClrScr;
-        textColor(lightred);
-        drawbox(1,1,80,24,'');
-        drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');
-        initiateBean(5); // initiate beans by a given number
         textColor(lightblue);
         drawbox(1,1,space_width,space_height,''); //moving space, wall
         drawbox(1,1,space_width,3,'Jeu de Serpent (c) 2018');// title of the game
@@ -758,9 +751,7 @@ begin
                     if (dir = 3) and (dirnew <> 1) then dir := dirnew;
                     if (dir = 4) and (dirnew <> 2) then dir := dirnew;
                 end;
-                if (k = #27) then //?what is #27
-                                  //* 回复：27是Pascal中ESC键的ASCII编号，参考：http://wiki.freepascal.org/ASCII
-                                  //* 你们自己Google搜一下就有解释了好吗
+                if (k = #27) then // press ESC key
                 begin
                     snakeDie;
                     creatFile;
