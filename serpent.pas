@@ -20,11 +20,12 @@ uses crt, sysutils, math, rank;
 
 //todo:蛇撞自己不会死 => Done !
 //todo:待处理的bug:创建文件存分数
+//TODO bug: intro界面，第一次无论按什么，只要第二次按了C，都能开始游戏
 //1 pomme : fait gagner 1 points et fait gagner en taille le serpent. => Done !
 //2 bombe : fait perdre une vie, disparaît après 10 secondes. => Done !
 //3 snakeSpeedUp: speed increases for 5 seconds. => Done !
 //4 strewberry : fait gagner 10 points, disparaît après 5 secondes => Done !
-//5 diamant : écran rempli de pommes, disparaît après 5 secondes
+//? 5 diamant : écran rempli de pommes, disparaît après 5 secondes => 真的需要？
 
 
 
@@ -46,6 +47,7 @@ var i,j,len,dir,dirnew,beans_amount:Integer;
 	score,speed:Integer;
     f:file of ranking;
 	r:ranking;
+
 
 
 //! ----------------------------------------------------------------------------
@@ -100,6 +102,7 @@ begin
     DecodeTime(t, HH, MM, SS, MS);
     convertToInt := HH*3600 + MM*60 + SS;
 end;
+
 
 
 //! ----------------------------------------------------------------------------
@@ -199,7 +202,6 @@ begin
     textColor(lightred); // reset color to red
 end;
 
-
 //* draw snake
 procedure drawsnake;
 (*  INPUT
@@ -276,13 +278,10 @@ begin
         write(r.name[i],' ',r.score[i]);
         writeln();
     end;
-end; 
-
-
+end;
 
 //* store the score 
 procedure creatFile;
-
 var i:integer;
 begin	
     ClrScr;
@@ -386,7 +385,6 @@ begin
     end;
 end;
 
-
 //* #1 normal bean
 procedure snakeGrow(x,y,tmp:Integer);
 (*  increase the length of snake if it eats a bean
@@ -468,21 +466,17 @@ end;
 
 //TODO #5 diamond
 procedure snakeBoostBean;
-
 var i,j:integer;
 begin
     textColor(green);
-    for i:=2 to 79 do 
-        for j:=4 to 22 do 
-            if (snakeContain(i,j)=False) then 
-                begin
+    for i:=2 to space_width-1 do 
+        for j:=4 to space_height-1 do 
+            if not (snakeContain(i,j)) then 
+            begin
                 gotoXY(i,j);
                 writeln('*');
-                end;
+            end;
 end;
-
-
-
 
 procedure checkSnakeStatus(x,y,ind:integer);
 (*  Find out which kind of bean that has been eaten by snake
