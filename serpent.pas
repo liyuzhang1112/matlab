@@ -22,8 +22,8 @@ uses crt, sysutils, math, rank;
 //todo:待处理的bug:创建文件存分数
 //1 pomme : fait gagner 1 points et fait gagner en taille le serpent.
 //2 bombe : fait perdre une vie, disparaît après 10 secondes.
-//3 snakeSpeedUp: speed increases for 5 seconds.
-//4 fraise : fait gagner 10 points, disparaît après 5 secondes
+//3 snakeSpeedUp: speed increases for 5 seconds. => Done !
+//4 strewberry : fait gagner 10 points, disparaît après 5 secondes
 //5 diamant : écran rempli de pommes, disparaît après 5 secondes
 
 
@@ -37,9 +37,8 @@ var i,j,len,dir,dirnew,beans_amount:Integer;
     //整个蛇是由一个2维数组来表示的，这个数组记载了蛇每一截所在的坐标（x,y）。行数代表蛇的长度
     //第一行是蛇头。第一列是横坐标x，第二列是纵坐标y——如果我没记错的话
 	body:array[1..255, 1..2] of Integer; // coordinates of snake
-    buff_history:array[0..254] of TDateTime; // snake buff: duration
-    buff_effect:array[0..254] of Integer; // snake buff: effect
-    beans:array of array of Integer; // coordinates of bean
+    buff:array[0..254, 0..1] of LongInt; // snake buff: effect
+    beans:array of array of LongInt; // coordinates of bean
     hWalls:array of array of Integer; // coordinates of horizontal wall
     vWalls:array of array of Integer; // coordinates of vertical wall
 	diff,start:String;
@@ -89,6 +88,18 @@ begin
 	end;
 end;
 
+function convertToInt(t:TDateTime):LongInt;
+(*  Convert TDateTime to LongInt
+    INPUT
+        t: time [TDateTime]
+    OUTPUT
+        convertToInt: time in second [LongInt]
+*)
+var HH, MM, SS, MS:Word;
+begin
+    DecodeTime(t, HH, MM, SS, MS);
+    convertToInt := HH*3600 + MM*60 + SS;
+end;
 
 
 //! ----------------------------------------------------------------------------
@@ -110,25 +121,25 @@ var i1,i2:integer;
 begin
 	for i2 := 1 to height do
 	begin
-		GotoXY(x0,y0+i2-1);
+		gotoXY(x0,y0+i2-1);
 		for i1 := 1 to width do
 		begin
 			if (i2 = 1) or (i2 = height) then
 				if (i1 = 1) or (i1 = width) then
-					Write('+')
+					write('+')
 				else
-					Write('-')
+					write('-')
 			else if (i1 = 1) or (i1 = width) then
-					Write('|')
+					write('|')
 				else
-					Write(' ')
+					write(' ')
 		end;
 	end;
 	if (title <> '') then
 	begin
 		i1 := y0+floor((height-1)/2);
 		i2 := x0+floor(width/2-length(title)/2);
-		GotoXY(i2,i1);
+		gotoXY(i2,i1);
 		write(title);
 	end;
 end;
@@ -153,7 +164,7 @@ begin
             pos := ind * wall_length + l - 1;
             hWalls[pos,1] := x + l - 1;
             hWalls[pos,2] := y;
-            GotoXY(hWalls[pos,1],hWalls[pos,2]);
+            gotoXY(hWalls[pos,1],hWalls[pos,2]);
             textColor(lightblue);
             write('-');
         end;
@@ -180,7 +191,7 @@ begin
             pos := ind * wall_length + l - 1;
             vWalls[pos,1] := x;
             vWalls[pos,2] := y + l - 1;
-            GotoXY(vWalls[pos,1],vWalls[pos,2]);
+            gotoXY(vWalls[pos,1],vWalls[pos,2]);
             textColor(lightblue);
             write('|');
         end;
@@ -200,7 +211,7 @@ var tmp:integer;
 begin
 	for tmp:=1 to len do
 	begin
-		GotoXY(body[tmp,1], body[tmp,2]);
+		gotoXY(body[tmp,1], body[tmp,2]);
 		if (tmp = 1) then write('o')
 		else write('x');
 	end;
@@ -216,11 +227,11 @@ procedure snakeDie;
 begin
 	textColor(lightblue);
 	drawbox(1,11,80,3,'');
-	GotoXY(37,12);
+	gotoXY(37,12);
 	textColor(lightred);
 	write('Game Over');
 	textColor(lightgray);
-	GotoXY(20,20);
+	gotoXY(20,20);
 	delay(1000);
 end;
 
@@ -303,8 +314,8 @@ begin
         i:=i+1;
     until (r.name[i]='');
     ClrScr;
-    textcolor(lightred);
-    gotoxy(20,5);
+    textColor(lightred);
+    gotoXY(20,5);
     writeln('Entrez votre nom');
     readln(r.name[i]);
 //todo:directly readln the score
@@ -325,7 +336,7 @@ procedure initiateBean(amount:integer);
     OUTPUT
         (none)
 *)
-var x,y,ind,r,randomfood:integer;
+var x,y,ind,r:integer;
 begin
     setLength(beans, amount, 4);
     for ind := 0 to amount-1 do
@@ -335,34 +346,55 @@ begin
             x := random(space_width-3)+2;
             y := random(space_height-5)+4;
         until not snakeContain(x,y);
-        beans[ind,1] := x;
-        beans[ind,2] := y;
+        beans[ind,0] := x;
+        beans[ind,1] := y;
         r := random(30)+1;
         Case r Of 
-            27:   randomfood := 2;
-            28:   randomfood := 3;
-            29:   randomfood := 4;
-            30:   randomfood := 5;
+            27:
+            begin
+                beans[ind,2] := 2; // bomb
+                beans[ind,3] := convertToInt(time+encodeTime(0,0,10,0));
+                gotoXY(x,y);
+                textColor(black);
+                write('X');
+            end; 
+            28:
+            begin
+                beans[ind,2] := 3; // snakeSpeedUp
+                beans[ind,3] := 999999;
+                gotoXY(x,y);
+                textColor(blue);
+                write('*');
+            end;   
+            29:
+            begin
+                beans[ind,2] := 4; // strewberry
+                beans[ind,3] := convertToInt(time+encodeTime(0,0,5,0));
+                gotoXY(x,y);
+                textColor(red);
+                write('*');
+            end;
+            30:
+            begin
+                beans[ind,2] := 5; // diamond
+                beans[ind,3] := convertToInt(time+encodeTime(0,0,5,0));
+                gotoXY(x,y);
+                textColor(lightcyan);
+                write('*');
+            end;
         Else
-            randomfood := 1;
-        end;        
-        beans[ind,3] := randomfood; 
-        beans[ind,4] := 0;
-        // draw different beans on screen
-        GotoXY(x,y);
-        case beans[ind,3] of
-            1: begin textColor(green); write('*'); end; // normal bean
-            2: begin textColor(black); write('X'); end; // bomb
-            3: begin textColor(blue); write('*'); end; // snakeSpeedUp
-            4: begin textColor(red); write('*'); end; // fraise
-            5: begin textColor(lightcyan); write('*'); end;// diamond
+            beans[ind,2] := 1; // normal bean
+            beans[ind,3] := 999999;
+            gotoXY(x,y);
+            textColor(green);
+            write('*');
         end;
-        textColor(lightred); // reset color to red
     end;
+    textColor(lightred); // reset color to red
 end;
 
 procedure refreshBean(ind:Integer);
-(*  Refresh a new bean after eating
+(*  Refresh a new bean after eating or disappearing
     INPUT
         (none)
     OUTPUT
@@ -374,36 +406,34 @@ begin
         x := random(78)+1;
         y := random(19)+4;
     until not snakeContain(x,y);
-	beans[ind,1] := x;
-	beans[ind,2] := y;
-	GotoXY(x,y);
-	begin
-        r := random(40)+1;
-        Case r Of 
-            27:   randomfood := 2; // bomb
-            28:   randomfood := 3; // speed-up
-            29:   randomfood := 4; // strewberry
-            30:   randomfood := 5; // diamond
-        Else
-            randomfood := 1; // normal bean
-        end; 
-        beans[ind,3] := randomfood; 
-        beans[ind,4] := 0;
-        GotoXY(x,y);
-        case beans[ind,3] of
-            1: begin textColor(green); write('*'); end; // normal bean
-            2: begin textColor(black); write('X'); end; // bomb
-            3: begin textColor(blue); write('*'); end; // speed-up
-            4: begin textColor(red); write('*'); end; // strewberry
-            5: begin textColor(lightcyan); write('*'); end; // diamond
-	    end;
-	    textColor(lightred);
+	beans[ind,0] := x;
+	beans[ind,1] := y;
+	gotoXY(x,y);
+    r := random(40)+1;
+    Case r Of 
+        27:   randomfood := 2; // bomb
+        28:   randomfood := 3; // speed-up
+        29:   randomfood := 4; // strewberry
+        30:   randomfood := 5; // diamond
+    Else
+        randomfood := 1; // normal bean
+    end; 
+    beans[ind,2] := randomfood; 
+    beans[ind,3] := 0;
+    gotoXY(x,y);
+    case beans[ind,2] of
+        1: begin textColor(green); write('*'); end; // normal bean
+        2: begin textColor(black); write('X'); end; // bomb
+        3: begin textColor(blue); write('*'); end; // speed-up
+        4: begin textColor(red); write('*'); end; // strewberry
+        5: begin textColor(lightcyan); write('*'); end; // diamond
     end;
+    textColor(lightred);
 end;
 
 //* #1 when snake eats a normal bean
 procedure snakeGrow(x,y,tmp:Integer);
-(*  Increase the length of snake if it eats a bean
+(*  increase the length of snake if it eats a bean
     INPUT
         x: X coordinate [int]
         y: Y coordinate [int]
@@ -411,15 +441,14 @@ procedure snakeGrow(x,y,tmp:Integer);
         (none)
 *)
 begin
-    if (beans[tmp,3]=4) then  inc(score,10); // i.e. score = score + 10
-    if (beans[tmp,3]=1) then  inc(score,1);
+    inc(score,1);
 	inc(len,1);
     // inc(speed,-10); //? unused
 	body[len,1] := x;
 	body[len,2] := y;
-	GotoXY(x,y);
+	gotoXY(x,y);
 	write('x');
-	GotoXY(2,2); // move cursor back to score panel
+	gotoXY(2,2); // move cursor back to score panel
 	textColor(white);
     textColor(lightred);
 	write(' Point: ',score);
@@ -430,22 +459,29 @@ end;
 
 //TODO #3 when snake eats a speed-up bean
 procedure snakeSpeedUp;
-var endtime: TDateTime;
+var endtime: LongInt;
 begin
     inc(speed, -100);
-    endtime := Time + EnCodeTime(0,0,10,0); // 10s HH, MM, SS, MS
+    endtime := convertToInt(time+encodeTime(0,0,10,0)); // i.e. last 10s
     for i := 0 to 254 do // find an unused position to save buff
     begin
-        if (buff_history[i] = 0) then
+        if (buff[i,0] = 0) then
         begin
-            buff_history[i] := endtime;
-            buff_effect[i] := 100;
-            Break;
+            buff[i,0] := endtime;
+            buff[i,1] := 100;
+            break;
         end;
     end;
 end;
 
 //TODO #4 when snake eats a strawberry
+procedure snakeBoostScore;
+begin
+    inc(score, 10);
+    gotoXY(2,2);
+    write(' Point: ',score);
+end;
+
 
 //TODO #5 when snake eats a diamond
 //TODO #5 after 10 seconds, the beans disappear and reinitialize beans
@@ -453,12 +489,12 @@ procedure diamond(x,y,tmp:integer);
 
 var i,j:integer;
 begin
-    textcolor(green);
+    textColor(green);
     for i:=2 to 79 do 
         for j:=4 to 22 do 
             if (snakeContain(i,j)=False) then 
                 begin
-                GotoXY(i,j);
+                gotoXY(i,j);
                 writeln('*');
                 end;
 end;
@@ -471,10 +507,10 @@ var ind:integer;
 begin
     for ind:=1 to amount do 
     begin 
-        beans[ind,4]:= beans[ind,4]+speed;
-        if (beans[ind,3]=2) and (beans[ind,4]>10000) then
+        beans[ind,3]:= beans[ind,3]+speed;
+        if (beans[ind,2]=2) and (beans[ind,3]>10000) then
         begin
-            GotoXY(beans[ind,1],beans[ind,2]);
+            gotoXY(beans[ind,0],beans[ind,1]);
             write('');			
         end;
     end;
@@ -490,12 +526,12 @@ procedure checkSnakeStatus(x,y,ind:integer);
     OUTPUT
 *)
 begin
-    case beans[ind,3] of
-        1: begin snakeGrow; end; // normal bean
+    case beans[ind,2] of
+        1: begin snakeGrow(x,y,ind); end; // normal bean snakeGrow(x,y,ind);
         2: begin snakeDie; end; // bomb
         3: begin snakeSpeedUp; end; // speed-up
-        4: begin snakeGrow; end; // strawberry
-        5: begin diamond; end;// diamond
+        4: begin snakeBoostScore; end; // strawberry
+        5: begin diamond(x,y,ind); end;// diamond
     end;
 end;
 
@@ -508,29 +544,39 @@ procedure checkTime;
     OUTPUT
         (none)
 *)
-var now:TDateTime;
+var now:LongInt; //ind:Integer;
 begin
-    GotoXY(45,2);
-    Write(' Speed ', speed);
-    now := Time;
-    if (buff_history[0] <> 0) and (now >= buff_history[0]) then
+    now := convertToInt(time);
+    // check buff
+    if (buff[0,0] <> 0) and (now >= buff[0,0]) then
     begin
-        Inc(speed, buff_effect[0]);
+        inc(speed, buff[0,1]);
         for i := 1 to 254 do
         begin
-            buff_history[i-1] := buff_history[i];
-            buff_effect[i-1] := buff_effect[i];
+            buff[i-1,0] := buff[i,0];
+            buff[i-1,1] := buff[i,1];
         end;
     end;
 
-    GotoXY(2,2);
-    Write(' hist ', buff_history[0]);
-    GotoXY(2,3);
-    Write(' effect ', buff_effect[0]);
-    GotoXY(2,4);
-    Write(' hist ', buff_history[1]);
-    GotoXY(2,5);
-    Write(' effect ', buff_effect[1]);
+    // check beans
+    // for ind := 0 to beans_amount-1 do
+    // begin
+    //     if (now >= beans[ind,3]) then
+    //     begin
+    //         refreshBean(ind);
+    //     end;
+    // end;
+
+    //* JUST FOR DEBUGGING vvv
+    gotoXY(30,2);
+    write(' hist, effect:', buff[0,0], ', ', buff[0,1]);
+    gotoXY(30,3);
+    write(' hist, effect:', buff[1,0], ', ', buff[1,1]);
+    gotoXY(60,2);
+    write(' speed:', speed);
+    gotoXY(60,3);
+    write(' time:', now);
+    //* END OF DEBUGGING ^^^
 end;
 
 procedure movesnake;
@@ -542,8 +588,6 @@ procedure movesnake;
 *)
 var x,y,wasx,wasy,tmp:integer;
 begin
-    // ***** Checking buff *****
-    checkTime;
     // get direction from main program
 	case dir of
 		1: begin x :=  1; y := 0; end; // right (i.e. east)
@@ -552,10 +596,9 @@ begin
 		4: begin x :=  0; y :=-1; end; // up (i.e. north)
 	end;
     // ***** Moving *****
-	GotoXY(body[1,1], body[1,2]); write('x'); // change snake head to body
-	GotoXY(body[len,1], body[len,2]); write(' '); // change snake tail to empty
-	wasx := body[len,1];//? position of tail ???
-                        //* 回复：是的
+	gotoXY(body[1,1], body[1,2]); write('x'); // change snake head to body
+	gotoXY(body[len,1], body[len,2]); write(' '); // change snake tail to empty
+	wasx := body[len,1];
 	wasy := body[len,2];
     // check if snake meets itself
 	if (snakeContain(body[1,1]+x, body[1,2]+y)) then
@@ -572,11 +615,11 @@ begin
     // change snake head: add new position
 	body[1,1] := body[1,1] + x;
 	body[1,2] := body[1,2] + y;
-	GotoXY(body[1,1], body[1,2]); write('o');
+	gotoXY(body[1,1], body[1,2]); write('o');
     // ***** Eating *****
     for tmp := 0 to beans_amount-1 do
     begin
-        if (snakeContain(beans[tmp,1],beans[tmp,2])) then // a bean is eaten
+        if (snakeContain(beans[tmp,0],beans[tmp,1])) then // a bean is eaten
         begin
             checkSnakeStatus(wasx, wasy, tmp);
             refreshBean(tmp);
@@ -606,30 +649,30 @@ end;
 //* vvvvvvvvvvvvvvvvvvvvvvvvv Welcome Window vvvvvvvvvvvvvvvvvvvvvvvvv
 procedure intros;
 begin
-	gotoxy(24,4);
+	gotoXY(24,4);
 	writeln('Bienvenue au jeu de serpent!');
-	gotoxy(26,5);
+	gotoXY(26,5);
 	writeln('Voici les règles de ce jeu：');
-	gotoxy(2,6);
+	gotoXY(2,6);
 	writeln('Vous pouvez utiliser les flèches sur le clavier pour controler la direction');
-	gotoxy(8,7);
+	gotoXY(8,7);
 	writeln('Vous ne pouvez pas toucher les murs et le corps du serpent');
-	gotoxy(17,8);
+	gotoXY(17,8);
 	writeln('Maintenant vous pouvez choisir la difficulté');
-	gotoxy(19,9);
+	gotoXY(19,9);
 	writeln('Entrez f pour facile et d pour difficile');
 	readln(diff);
 	if diff='f' then
 	begin
-		gotoxy(23,10);
+		gotoXY(23,10);
 		writeln('Vous avez choisir la mode facile');
 	end;
 	if diff='d' then
 	begin
-		gotoxy(21,10);
+		gotoXY(21,10);
 		writeln('Vous avez choisir la mode difficile');
 	end;
-	gotoxy(24,11);
+	gotoXY(24,11);
 	writeln('Entrez c pour commencer la jeu');
 	readln(start);
 end;
@@ -665,10 +708,10 @@ begin
     body[3,2] := 12;
     // initiate buff
     for i:=0 to 254 do
-        buff_history[i] := 0;
-        buff_effect[i] := 0;
+        buff[i,0] := 0;
+        buff[i,1] := 0;
 	// print perimeter on screen
-    textcolor(lightblue);
+    textColor(lightblue);
 	drawbox(1,1,space_width,space_height,'');
 	drawbox(1,1,space_width,3,'Jeu de Serpent (c) 2018');
 	intros;
@@ -676,7 +719,7 @@ begin
 	begin
         // print initial snake on screen
         ClrScr;
-        textcolor(lightred);
+        textColor(lightred);
         drawbox(1,1,80,24,'');
         drawbox(1,1,80,3,'Jeu de Serpent (c) 2018');
         initiateBean(5); // initiate beans by a given number
@@ -686,7 +729,7 @@ begin
         // print initial snake on screen
         textColor(lightred);
         drawsnake;
-        GotoXY(2,2);
+        gotoXY(2,2);
         writeln(' Point: ',score);
         // initiate beans
         initiateBean(beans_amount); // initiate beans by a given number
@@ -725,9 +768,10 @@ begin
             end;
             //todo: disappearBean(beans_amount,d);
             movesnake;
-            GotoXY(2,2);
+            checkTime;
+            gotoXY(2,2);
         until false;
         textColor(lightgray);
-        GotoXY(1,25);
+        gotoXY(1,25);
     end;
 end.
