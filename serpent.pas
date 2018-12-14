@@ -11,21 +11,16 @@ Superviseur: Jean-Baptiste LOUVET
 program serpent;
 uses crt, sysutils, math, rank;
 
-//! 【规！定！】
-//! 有错误就一个一个改，发现bug，先解决掉，然后再添加新功能。
-//! 不要一股脑加一堆新东西上去，然后都有问题，没一个达到预期 能用的。 
-//! 使用Git的一个好处，就是让你可以一步一步跟踪进展，“屁胡走向胜利”。一下子加这么多，而且
-//! 上一个都还有bug没有解决掉的，就加新的东西 而且新的里面也还有bug，这会让人很难去跟踪每个问
-//! 题的错误，解决每个问题对应的bug。
-
-//todo:蛇撞自己不会死 => Done !
-//todo:待处理的bug:创建文件存分数
+//TODO 待处理的bug:创建文件存分数
 //TODO bug: intro界面，第一次无论按什么，只要第二次按了C，都能开始游戏
-//1 pomme : fait gagner 1 points et fait gagner en taille le serpent. => Done !
-//2 bombe : fait perdre une vie, disparaît après 10 secondes. => Done !
-//3 snakeSpeedUp: speed increases for 5 seconds. => Done !
-//4 strewberry : fait gagner 10 points, disparaît après 5 secondes => Done !
-//? 5 diamant : écran rempli de pommes, disparaît après 5 secondes => 真的需要？
+//1 appel : win 5 scores and grow up 1  => Done !
+//TODO 2 bomb : loss 1 life, disappear in 10 seconds
+//TODO 3 heart : get 1 life, disappear in 5 seconds
+//TODO 4 mushroom : loss 5 scores and reduce 1
+//TODO 5 strewberry : win 50 scores
+//TODO 6 magic box : a random bean
+//TODO 7 diamond : fill screen by apples during 5 seconds
+//8 speed-up : speed increases for 5 seconds. => Done !
 
 
 
@@ -385,7 +380,7 @@ begin
     end;
 end;
 
-//* #1 normal bean
+//* #1 apple (normal bean)
 procedure snakeGrow(x,y,tmp:Integer);
 (*  increase the length of snake if it eats a bean
     INPUT
@@ -395,8 +390,8 @@ procedure snakeGrow(x,y,tmp:Integer);
         (none)
 *)
 begin
-    inc(score,1);
-	inc(len,1);
+    inc(score,5); // win 5 points
+	inc(len,1); // grow up 1
 	body[len-1,0] := x;
 	body[len-1,1] := y;
 	gotoXY(x,y);
